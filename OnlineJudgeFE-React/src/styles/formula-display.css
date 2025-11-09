@@ -1,0 +1,93 @@
+/**
+ * 数学公式显示增强样式
+ * 当幻灯片只有单个公式时，自动放大显示（但确保不溢出）
+ */
+
+/* 隐藏KaTeX的aria辅助功能标签，只显示视觉公式 */
+.katex .katex-mathml {
+  display: none !important;
+}
+
+/* KaTeX公式基础样式 */
+.katex {
+  font-size: 1em;
+}
+
+/* 块级公式 - 默认居中显示 */
+.katex-display {
+  text-align: center;
+  margin: 2rem 0;
+  overflow: visible;
+}
+
+/* 放大显示的公式（用于简短内容幻灯片） - 适度放大，不溢出 */
+.prose-2xl .katex-display {
+  font-size: 1.3em !important;
+  margin: 3rem 0;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.prose-2xl .katex {
+  font-size: 1.2em !important;
+  max-width: 100%;
+}
+
+/* 确保公式在简短内容中垂直居中 */
+.prose-2xl .katex-display > .katex {
+  display: inline-block;
+  text-align: center;
+}
+
+/* 桌面端 - 稍微放大 */
+@media (min-width: 1200px) {
+  .prose-2xl .katex-display {
+    font-size: 1.4em !important;
+  }
+  
+  .prose-2xl .katex {
+    font-size: 1.3em !important;
+  }
+}
+
+/* 平板端适配 */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .prose-2xl .katex-display {
+    font-size: 1.2em !important;
+  }
+  
+  .prose-2xl .katex {
+    font-size: 1.1em !important;
+  }
+}
+
+/* 移动端适配 - 较小字体 */
+@media (max-width: 767px) {
+  .katex-display {
+    font-size: 0.85em !important;
+    padding: 0 0.5rem;
+    overflow: visible;
+  }
+  
+  .prose-2xl .katex-display {
+    font-size: 1em !important;
+  }
+  
+  .prose-2xl .katex {
+    font-size: 0.95em !important;
+  }
+}
+
+/* 防止公式溢出 - 关键修复 */
+.katex-display .katex {
+  max-width: 100% !important;
+  overflow: visible !important;
+  display: inline-block !important;
+}
+
+/* 长公式自适应缩小 */
+.katex-display .katex-html {
+  max-width: 100%;
+  overflow: visible;
+}
+

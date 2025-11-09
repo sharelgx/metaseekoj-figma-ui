@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>PostMessage 增强调试工具</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            padding: 0;
+            margin: 0;
+            background: #1a1a1a;
+            color: #0f0;
+            display: flex;
+            height: 100vh;
+        }
+        .left-panel {
+            width: 40%;
+            background: #000;
+            border-right: 2px solid #0a0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .right-panel {
+            width: 60%;
+            display: flex;
+            flex-direction: column;
+        }
+        .controls {
+            background: #2a2a2a;
+            padding: 15px;
+            border-bottom: 2px solid #0a0;
+        }
+        h2 {
+            margin: 0 0 10px 0;
+            color: #0ff;
+            font-size: 18px;
+        }
+        button {
+            background: #0a0;
+            color: #000;
+            border: none;
+            padding: 10px 15px;
+            margin: 3px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #0f0;
+        }
+        button:active {
+            background: #080;
+        }
+        #logs {
+            flex: 1;
+            background: #000;
+            padding: 15px;
+            overflow-y: auto;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .log-entry {
+            margin: 3px 0;
+            padding: 5px 8px;
+            border-left: 3px solid #0a0;
+            padding-left: 10px;
+            word-wrap: break-word;
+        }
+        .log-parent {
+            border-left-color: #ff0;
+            color: #ff0;
+        }
+        .log-iframe {
+            border-left-color: #0ff;
+            color: #0ff;
+        }
+        .log-send {
+            border-left-color: #f0f;
+            color: #f0f;
+        }
+        .log-receive {
+            border-left-color: #0f0;
+            color: #0f0;
+        }
+        .log-error {
+            border-left-color: #f00;
+            color: #f00;
+        }
+        .log-success {
+            border-left-color: #0f0;
+            color: #0f0;
+            font-weight: bold;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .status-bar {
+            background: #2a2a2a;
+            padding: 10px 15px;
+            border-top: 2px solid #0a0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        .status-dot.online {
+            background: #0f0;
+        }
+        .status-dot.offline {
+            background: #f00;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .stats {
+            font-size: 11px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="left-panel">
+        <div class="controls">
+            <h2>🔬 PostMessage 调试控制台</h2>
+            <div style="margin: 10px 0;">
+                <button onclick="login()">🔐 模拟登录</button>
+                <button onclick="logout()">🚪 模拟退出</button>
+                <button onclick="sendTestMessage()">📤 发送测试消息</button>
+            </div>
+            <div>
+                <button onclick="checkStatus()">🔍 检查状态</button>
+                <button onclick="refreshIframe()">🔄 刷新编辑器</button>
+                <button onclick="clearLogs()">🗑️ 清空日志</button>
+            </div>
+        </div>
+
+        <div id="logs"></div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-dot" id="status"></span>
+                <span>iframe 连接</span>
+            </div>
+            <div class="stats">
+                <span>发送: <strong id="sendCount">0</strong></span> | 
+                <span>接收: <strong id="receiveCount">0</strong></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <div class="controls">
+            <h2>📺 Scratch 编辑器 (http://localhost:8601/)</h2>
+            <div style="font-size: 11px; color: #888; margin-top: 5px;">
+                💡 提示：编辑器内部的日志会自动显示在左侧面板
+            </div>
+        </div>
+        <iframe id="scratchIframe" src="http://localhost:8601/"></iframe>
+    </div>
+
+    <script>
+        const logsDiv = document.getElementById('logs');
+        const statusDot = document.getElementById('status');
+        const sendCountEl = document.getElementById('sendCount');
+        const receiveCountEl = document.getElementById('receiveCount');
+        
+        let iframe = null;
+        let sendCount = 0;
+        let receiveCount = 0;
+
+        function log(message, type = 'info', source = 'parent') {
+            const timestamp = new Date().toLocaleTimeString() + '.' + String(new Date().getMilliseconds()).padStart(3, '0');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            
+            if (source === 'iframe') {
+                entry.classList.add('log-iframe');
+                message = '📱 [iframe] ' + message;
+            } else if (source === 'parent') {
+                entry.classList.add('log-parent');
+                message = '🖥️ [parent] ' + message;
+            }
+            
+            entry.textContent = `[${timestamp}] ${message}`;
+            logsDiv.appendChild(entry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+            
+            // 同时输出到控制台
+            console.log(`[${source}][${type}] ${message}`);
+        }
+
+        function clearLogs() {
+            logsDiv.innerHTML = '';
+            sendCount = 0;
+            receiveCount = 0;
+            updateStats();
+            log('日志已清空', 'info');
+        }
+
+        function updateStats() {
+            sendCountEl.textContent = sendCount;
+            receiveCountEl.textContent = receiveCount;
+        }
+
+        function checkStatus() {
+            iframe = document.getElementById('scratchIframe');
+            
+            log('开始检查 iframe 状态...', 'info');
+            
+            if (iframe) {
+                log('✅ iframe 元素存在', 'success');
+                log(`iframe.src = ${iframe.src}`, 'info');
+                
+                if (iframe.contentWindow) {
+                    log('✅ iframe.contentWindow 可访问', 'success');
+                    statusDot.className = 'status-dot online';
+                    
+                    // 尝试注入日志拦截器
+                    try {
+                        injectLogInterceptor();
+                    } catch (e) {
+                        log(`⚠️ 无法注入日志拦截器（跨域限制）: ${e.message}`, 'error');
+                        log('💡 这是正常的，我们会使用 postMessage 来接收日志', 'info');
+                    }
+                } else {
+                    log('❌ iframe.contentWindow 不可访问', 'error');
+                    statusDot.className = 'status-dot offline';
+                }
+            } else {
+                log('❌ iframe 元素不存在', 'error');
+                statusDot.className = 'status-dot offline';
+            }
+        }
+
+        function injectLogInterceptor() {
+            // 注意：由于跨域限制，这个方法通常会失败
+            // 但我们可以尝试
+            const iframeWindow = iframe.contentWindow;
+            
+            if (iframeWindow && iframeWindow.postMessage) {
+                log('尝试与 iframe 建立日志通道...', 'info');
+            }
+        }
+
+        function login() {
+            iframe = document.getElementById('scratchIframe');
+            
+            if (!iframe || !iframe.contentWindow) {
+                log('❌ iframe 未准备好', 'error');
+                return;
+            }
+
+            const userInfo = {
+                isLoggedIn: true,
+                username: '柳老师',
+                avatarUrl: null
+            };
+
+            log('准备发送登录消息', 'send');
+            log(`用户信息: ${JSON.stringify(userInfo)}`, 'send');
+
+            try {
+                iframe.contentWindow.postMessage({
+                    type: 'USER_INFO_UPDATE',
+                    data: userInfo
+                }, '*');
+
+                sendCount++;
+                updateStats();
+                log('✅ USER_INFO_UPDATE 消息已发送', 'success');
+                log('⏳ 等待 iframe 响应...', 'info');
+                
+                // 5秒后检查是否成功
+                setTimeout(() => {
+                    log('💡 请查看右侧编辑器，右上角应该显示"柳老师"', 'info');
+                }, 2000);
+            } catch (e) {
+                log(`❌ 发送失败: ${e.message}`, 'error');
+            }
+        }
+
+        function logout() {
+            iframe = document.getElementById('scratchIframe');
+            
+            if (!iframe || !iframe.contentWindow) {
+                log('❌ iframe 未准备好', 'error');
+                return;
+            }
+
+            const userInfo = {
+                isLoggedIn: false,
+                username: null,
+                avatarUrl: null
+            };
+
+            log('准备发送退出登录消息', 'send');
+            log(`用户信息: ${JSON.stringify(userInfo)}`, 'send');
+
+            try {
+                iframe.contentWindow.postMessage({
+                    type: 'USER_INFO_UPDATE',
+                    data: userInfo
+                }, '*');
+
+                sendCount++;
+                updateStats();
+                log('✅ USER_INFO_UPDATE 消息已发送（退出登录）', 'success');
+            } catch (e) {
+                log(`❌ 发送失败: ${e.message}`, 'error');
+            }
+        }
+
+        function sendTestMessage() {
+            iframe = document.getElementById('scratchIframe');
+            
+            if (!iframe || !iframe.contentWindow) {
+                log('❌ iframe 未准备好', 'error');
+                return;
+            }
+
+            const testData = {
+                type: 'TEST_MESSAGE',
+                data: {
+                    message: 'Hello from parent window!',
+                    timestamp: new Date().toISOString(),
+                    random: Math.random()
+                }
+            };
+
+            log('发送测试消息', 'send');
+            log(`数据: ${JSON.stringify(testData)}`, 'send');
+
+            try {
+                iframe.contentWindow.postMessage(testData, '*');
+                sendCount++;
+                updateStats();
+                log('✅ 测试消息已发送', 'success');
+            } catch (e) {
+                log(`❌ 发送失败: ${e.message}`, 'error');
+            }
+        }
+
+        function refreshIframe() {
+            iframe = document.getElementById('scratchIframe');
+            if (iframe) {
+                log('🔄 正在刷新 iframe...', 'info');
+                iframe.src = iframe.src;
+            }
+        }
+
+        // 监听所有 postMessage 事件
+        window.addEventListener('message', (event) => {
+            receiveCount++;
+            updateStats();
+            
+            // 特殊处理：USER_INFO_UPDATE_ACK
+            if (event.data && event.data.type === 'USER_INFO_UPDATE_ACK') {
+                log(`🎉 收到 iframe 确认消息！`, 'success', 'iframe');
+                log(`iframe 已成功接收并处理登录信息`, 'success', 'iframe');
+                log(`用户信息: ${JSON.stringify(event.data.data.userInfo)}`, 'success', 'iframe');
+                log(`时间戳: ${event.data.data.timestamp}`, 'success', 'iframe');
+                return;
+            }
+            
+            log(`收到消息 [来源: ${event.origin}]`, 'receive');
+            
+            if (event.data) {
+                if (typeof event.data === 'object') {
+                    log(`类型: ${event.data.type || '未知'}`, 'receive');
+                    
+                    // 美化 JSON 输出
+                    const dataStr = JSON.stringify(event.data, null, 2);
+                    const lines = dataStr.split('\n');
+                    if (lines.length > 10) {
+                        log(`数据: ${lines.slice(0, 10).join('\n')}...`, 'receive');
+                    } else {
+                        log(`数据: ${dataStr}`, 'receive');
+                    }
+                    
+                    // 特殊处理：webpack 消息来自 iframe
+                    if (event.data.type && (
+                        event.data.type.includes('webpack') || 
+                        event.data.type === 'webpackOk'
+                    )) {
+                        log(`(这是 webpack HMR 消息，来自 iframe)`, 'info', 'iframe');
+                    }
+                } else {
+                    log(`数据: ${String(event.data).substring(0, 200)}`, 'receive');
+                }
+            }
+        }, false);
+
+        // 页面加载完成
+        window.addEventListener('load', () => {
+            log('🚀 调试工具已启动', 'success');
+            log('💡 提示：由于跨域安全限制，我们无法直接访问 iframe 的 console.log', 'info');
+            log('💡 但我们可以接收到 iframe 发送的 postMessage 事件', 'info');
+            
+            setTimeout(() => {
+                checkStatus();
+                log('⏳ 等待 Scratch 编辑器加载完成（约5秒）...', 'info');
+            }, 2000);
+
+            // 定期检查 iframe 状态
+            setInterval(() => {
+                const iframe = document.getElementById('scratchIframe');
+                if (iframe && iframe.contentWindow) {
+                    statusDot.className = 'status-dot online';
+                } else {
+                    statusDot.className = 'status-dot offline';
+                }
+            }, 1000);
+        });
+
+        // 监听 iframe 加载完成
+        document.getElementById('scratchIframe').addEventListener('load', () => {
+            log('✅ iframe 内容已加载完成', 'success');
+            checkStatus();
+            
+            setTimeout(() => {
+                log('💡 现在可以点击"模拟登录"测试 postMessage 通信', 'info');
+            }, 1000);
+        });
+
+        // 监听 iframe 错误
+        document.getElementById('scratchIframe').addEventListener('error', (e) => {
+            log(`❌ iframe 加载失败: ${e.message}`, 'error');
+        });
+    </script>
+</body>
+</html>
+

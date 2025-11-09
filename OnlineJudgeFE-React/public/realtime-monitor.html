@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>实时监控</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #000; color: #0f0; margin: 0; }
+        .container { max-width: 1800px; margin: 0 auto; display: grid; grid-template-columns: 600px 1fr; gap: 20px; height: 100vh; }
+        .left { overflow-y: auto; }
+        h1 { color: #0ff; font-size: 18px; margin: 0 0 15px 0; }
+        .panel { background: #0a0a0a; border: 2px solid #0a0; padding: 15px; margin-bottom: 15px; border-radius: 8px; }
+        .status-item { padding: 8px; margin: 5px 0; border-left: 4px solid #666; background: #111; }
+        .ok { border-left-color: #0f0; color: #0f0; }
+        .error { border-left-color: #f00; color: #f00; }
+        .warning { border-left-color: #ff0; color: #ff0; }
+        #logs { height: 400px; overflow-y: auto; font-size: 12px; }
+        .log { padding: 5px; margin: 2px 0; border-left: 3px solid #0a0; }
+        iframe { width: 100%; height: 100%; border: 2px solid #0a0; }
+        button { background: #0a0; color: #000; border: none; padding: 10px 20px; margin: 5px; cursor: pointer; border-radius: 4px; font-weight: bold; width: calc(100% - 10px); }
+        button:hover { background: #0f0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left">
+            <h1>🔬 Scratch 编辑器实时监控</h1>
+            
+            <div class="panel">
+                <h2 style="color: #0ff; font-size: 16px; margin: 0 0 10px 0;">实时状态</h2>
+                <div id="status">
+                    <div class="status-item warning">⏳ 等待 iframe 加载...</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2 style="color: #0ff; font-size: 16px; margin: 0 0 10px 0;">收到的消息</h2>
+                <div id="messages" style="max-height: 200px; overflow-y: auto; font-size: 11px;">
+                    <div class="status-item">等待消息...</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2 style="color: #0ff; font-size: 16px; margin: 0 0 10px 0;">日志</h2>
+                <div id="logs"></div>
+            </div>
+        </div>
+
+        <div>
+            <h1 style="margin-bottom: 10px;">📺 Scratch 编辑器（独立）</h1>
+            <p style="color: #888; font-size: 12px;">直接加载 8601 端口，避免嵌套 iframe</p>
+            <iframe id="iframe" src="http://localhost:8601/"></iframe>
+        </div>
+    </div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const messagesDiv = document.getElementById('messages');
+        const logsDiv = document.getElementById('logs');
+        
+        let messageCount = 0;
+        let vmReady = false;
+        let currentStatus = {};
+
+        function log(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.className = 'log';
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logsDiv.appendChild(div);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        function updateStatus(data) {
+            currentStatus = data;
+            
+            let html = '';
+            
+            if (data.vmReady !== undefined) {
+                html += `<div class="status-item ${data.vmReady ? 'ok' : 'error'}">
+                    VM 初始化: ${data.vmReady ? '✅ 是' : '❌ 否'}
+                </div>`;
+            }
+            
+            if (data.exportFn !== undefined) {
+                html += `<div class="status-item ${data.exportFn ? 'ok' : 'error'}">
+                    导出函数: ${data.exportFn ? '✅ 存在' : '❌ 不存在'}
+                </div>`;
+            }
+            
+            if (data.loadFn !== undefined) {
+                html += `<div class="status-item ${data.loadFn ? 'ok' : 'error'}">
+                    加载函数: ${data.loadFn ? '✅ 存在' : '❌ 不存在'}
+                </div>`;
+            }
+            
+            if (data.userLoggedIn !== undefined) {
+                html += `<div class="status-item ${data.userLoggedIn ? 'ok' : 'warning'}">
+                    登录状态: ${data.userLoggedIn ? '✅ 已登录' : '⚠️ 未登录'}
+                </div>`;
+            }
+            
+            const allReady = data.vmReady && data.exportFn && data.loadFn;
+            html += `<div class="status-item ${allReady ? 'ok' : 'error'}" style="margin-top: 10px; font-size: 14px; font-weight: bold;">
+                💾 保存功能: ${allReady ? '✅ 已就绪' : '❌ 未就绪'}
+            </div>`;
+            
+            statusDiv.innerHTML = html || '<div class="status-item warning">⏳ 等待数据...</div>';
+        }
+
+        // 监听所有消息
+        window.addEventListener('message', (event) => {
+            if (!event.origin.includes('localhost')) return;
+            
+            messageCount++;
+            
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'status-item';
+            msgDiv.textContent = `#${messageCount} [${new Date().toLocaleTimeString()}] ${event.data.type || 'unknown'}`;
+            messagesDiv.appendChild(msgDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            if (messagesDiv.children.length > 20) {
+                messagesDiv.removeChild(messagesDiv.children[0]);
+            }
+            
+            // 处理特定消息
+            if (event.data.type === 'SCRATCH_VM_READY') {
+                vmReady = true;
+                log('🎉 收到 SCRATCH_VM_READY 消息！', 'ok');
+                checkStatus();
+            }
+            
+            if (event.data.type === 'STATUS_RESPONSE') {
+                log('✅ 收到状态响应', 'ok');
+                updateStatus(event.data.data);
+            }
+            
+            if (event.data.type === 'USER_INFO_UPDATE_ACK') {
+                log('✅ 用户信息已同步', 'ok');
+            }
+        });
+
+        function checkStatus() {
+            const iframe = document.getElementById('iframe');
+            if (!iframe || !iframe.contentWindow) {
+                log('❌ iframe 未准备好', 'error');
+                return;
+            }
+            
+            log('📨 发送状态检查请求...', 'info');
+            iframe.contentWindow.postMessage({ type: 'CHECK_STATUS' }, '*');
+        }
+
+        // 页面加载完成
+        window.addEventListener('load', () => {
+            log('🚀 监控工具已启动', 'ok');
+            log('⏳ 等待 iframe 加载...', 'info');
+            
+            // 每3秒自动检查一次状态
+            setInterval(() => {
+                if (vmReady || messageCount > 5) {
+                    checkStatus();
+                }
+            }, 3000);
+        });
+
+        // iframe 加载完成
+        document.getElementById('iframe').addEventListener('load', () => {
+            log('✅ iframe 内容已加载', 'ok');
+            
+            setTimeout(() => {
+                log('⏰ 5秒后首次检查状态...', 'info');
+                checkStatus();
+            }, 5000);
+        });
+    </script>
+</body>
+</html>
+

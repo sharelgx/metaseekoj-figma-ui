@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>直接检测 Scratch iframe</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e293b; color: #e2e8f0; }
+        .log { background: #334155; padding: 15px; margin: 10px 0; border-left: 4px solid #667eea; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; font-size: 14px; }
+        .error { border-left-color: #ef4444; }
+        .success { border-left-color: #10b981; }
+        .warning { border-left-color: #f59e0b; }
+        pre { background: #1e293b; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 直接检测 Scratch iframe 状态</h1>
+    <div>
+        <button onclick="checkIframe()">🔍 检查 iframe</button>
+        <button onclick="checkUserInfo()">👤 检查用户信息</button>
+        <button onclick="sendUserInfo()">📨 手动发送用户信息</button>
+        <button onclick="openEditor()">📝 打开编辑器</button>
+    </div>
+    <div id="results"></div>
+    
+    <script>
+        function log(msg, type = 'log') {
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.innerHTML = msg;
+            document.getElementById('results').insertBefore(div, document.getElementById('results').firstChild);
+        }
+        
+        async function checkIframe() {
+            log('🔍 开始检查 iframe...', 'log');
+            
+            // 打开编辑器窗口
+            const editorWindow = window.open('http://localhost:8081/classroom/scratch/editor/7', 'scratch-editor');
+            
+            log('⏳ 等待 5 秒让页面加载...', 'log');
+            
+            setTimeout(() => {
+                try {
+                    // 尝试访问 iframe
+                    const iframes = editorWindow.document.querySelectorAll('iframe');
+                    
+                    if (iframes.length === 0) {
+                        log('❌ 没有找到 iframe', 'error');
+                        return;
+                    }
+                    
+                    log(`✅ 找到 ${iframes.length} 个 iframe`, 'success');
+                    
+                    const scratchIframe = iframes[0];
+                    log(`iframe src: ${scratchIframe.src}`, 'log');
+                    
+                    // 检查 iframe 内部的变量（会触发跨域错误，但我们可以从错误判断）
+                    try {
+                        const userInfo = scratchIframe.contentWindow.__scratchUserInfo;
+                        log('✅ 可以访问 iframe 内部变量', 'success');
+                        log(`<pre>window.__scratchUserInfo = ${JSON.stringify(userInfo, null, 2)}</pre>`, userInfo?.isLoggedIn ? 'success' : 'warning');
+                    } catch (e) {
+                        log('❌ 无法访问 iframe 内部变量（跨域限制）', 'error');
+                        log('这是正常的安全限制', 'log');
+                    }
+                    
+                } catch (e) {
+                    log(`❌ 检查失败: ${e.message}`, 'error');
+                }
+            }, 5000);
+        }
+        
+        async function checkUserInfo() {
+            log('👤 检查用户信息...', 'log');
+            
+            try {
+                const res = await fetch('http://localhost:8086/api/profile/', {credentials: 'include'});
+                const data = await res.json();
+                
+                if (data.error === null && data.data) {
+                    const username = data.data.real_name || data.data.user?.username;
+                    const avatar = data.data.avatar;
+                    
+                    log(`<pre>${JSON.stringify({
+                        isLoggedIn: true,
+                        username: username,
+                        avatarUrl: avatar ? 'http://localhost:8086' + avatar : null
+                    }, null, 2)}</pre>`, 'success');
+                } else {
+                    log('❌ 未登录', 'error');
+                }
+            } catch (e) {
+                log(`❌ 检查失败: ${e.message}`, 'error');
+            }
+        }
+        
+        async function sendUserInfo() {
+            log('📨 手动发送用户信息到编辑器...', 'log');
+            
+            try {
+                // 获取用户信息
+                const res = await fetch('http://localhost:8086/api/profile/', {credentials: 'include'});
+                const data = await res.json();
+                
+                if (data.error !== null || !data.data) {
+                    log('❌ 用户未登录', 'error');
+                    return;
+                }
+                
+                const username = data.data.real_name || data.data.user?.username;
+                const avatar = data.data.avatar;
+                
+                const userInfo = {
+                    isLoggedIn: true,
+                    username: username,
+                    avatarUrl: avatar ? 'http://localhost:8086' + avatar : null
+                };
+                
+                log(`准备发送的用户信息: <pre>${JSON.stringify(userInfo, null, 2)}</pre>`, 'log');
+                
+                // 打开编辑器
+                const editorWindow = window.open('http://localhost:8081/classroom/scratch/editor/7', 'scratch-editor');
+                
+                // 等待页面加载
+                setTimeout(() => {
+                    log('查找 iframe...', 'log');
+                    const iframes = editorWindow.document.querySelectorAll('iframe');
+                    
+                    if (iframes.length === 0) {
+                        log('❌ 没有找到 iframe', 'error');
+                        return;
+                    }
+                    
+                    const scratchIframe = iframes[0];
+                    log('✅ 找到 iframe，发送 postMessage...', 'log');
+                    
+                    scratchIframe.contentWindow.postMessage({
+                        type: 'USER_INFO_UPDATE',
+                        data: userInfo
+                    }, '*');
+                    
+                    log('✅ postMessage 已发送', 'success');
+                    log('请查看编辑器窗口，右上角是否显示用户名', 'log');
+                    
+                }, 3000);
+                
+            } catch (e) {
+                log(`❌ 发送失败: ${e.message}`, 'error');
+            }
+        }
+        
+        function openEditor() {
+            window.open('http://localhost:8081/classroom/scratch/editor/7', 'scratch-editor');
+        }
+    </script>
+</body>
+</html>
+

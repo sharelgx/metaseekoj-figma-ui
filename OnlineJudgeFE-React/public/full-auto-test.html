@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>完全自动化测试</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #000;
+            color: #0f0;
+            font-size: 14px;
+        }
+        .test { padding: 10px; margin: 5px 0; border-left: 4px solid #666; }
+        .pass { border-left-color: #0f0; color: #0f0; }
+        .fail { border-left-color: #f00; color: #f00; }
+        .running { border-left-color: #00f; color: #00f; }
+        iframe { width: 1px; height: 1px; position: absolute; left: -9999px; }
+    </style>
+</head>
+<body>
+    <h1>🤖 完全自动化测试（无需人工干预）</h1>
+    <div id="output"></div>
+    <iframe id="iframe" src="http://localhost:8601/"></iframe>
+    
+    <script>
+        const output = document.getElementById('output');
+        let testsPassed = 0;
+        let testsFailed = 0;
+
+        function log(msg, status = 'info') {
+            const div = document.createElement('div');
+            div.className = `test ${status}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            output.appendChild(div);
+            console.log(msg);
+        }
+
+        async function sleep(ms) {
+            return new Promise(r => setTimeout(r, ms));
+        }
+
+        async function runTests() {
+            log('🚀 开始自动化测试...', 'running');
+            await sleep(1000);
+
+            // 测试 1: 检查服务
+            log('📋 测试 1: 检查后端服务', 'running');
+            try {
+                const res = await fetch('http://localhost:8086/api/website/');
+                if (res.ok) {
+                    log('✅ 测试 1 通过: 后端服务正常', 'pass');
+                    testsPassed++;
+                } else {
+                    throw new Error('状态码: ' + res.status);
+                }
+            } catch (e) {
+                log('❌ 测试 1 失败: ' + e.message, 'fail');
+                testsFailed++;
+            }
+
+            // 测试 2: 登录
+            log('📋 测试 2: 登录系统', 'running');
+            try {
+                const res = await fetch('http://localhost:8086/api/login/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username: 'root', password: 'lgx780504' })
+                });
+                const data = await res.json();
+                if (data.error === null) {
+                    log('✅ 测试 2 通过: 登录成功', 'pass');
+                    testsPassed++;
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (e) {
+                log('❌ 测试 2 失败: ' + e.message, 'fail');
+                testsFailed++;
+            }
+
+            // 测试 3: 等待 VM 初始化
+            log('📋 测试 3: 等待 Scratch VM 初始化', 'running');
+            try {
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(new Error('超时')), 15000);
+                    const handler = (e) => {
+                        if (e.data && e.data.type === 'SCRATCH_VM_READY') {
+                            clearTimeout(timeout);
+                            window.removeEventListener('message', handler);
+                            resolve();
+                        }
+                    };
+                    window.addEventListener('message', handler);
+                });
+                log('✅ 测试 3 通过: VM 初始化成功', 'pass');
+                testsPassed++;
+            } catch (e) {
+                log('❌ 测试 3 失败: ' + e.message, 'fail');
+                testsFailed++;
+                showSummary();
+                return;
+            }
+
+            // 测试 4: 导出项目数据
+            log('📋 测试 4: 导出项目数据', 'running');
+            try {
+                const projectData = await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(new Error('超时')), 5000);
+                    const handler = (e) => {
+                        if (e.data && e.data.type === 'EXPORT_PROJECT_RESPONSE') {
+                            clearTimeout(timeout);
+                            window.removeEventListener('message', handler);
+                            resolve(e.data.data);
+                        }
+                    };
+                    window.addEventListener('message', handler);
+                    
+                    document.getElementById('iframe').contentWindow.postMessage({
+                        type: 'EXPORT_PROJECT_REQUEST'
+                    }, '*');
+                });
+                
+                const size = JSON.stringify(projectData).length;
+                log(`✅ 测试 4 通过: 导出成功 (${size} 字节)`, 'pass');
+                testsPassed++;
+                
+                // 测试 5: 保存到后端
+                log('📋 测试 5: 保存项目到后端', 'running');
+                
+                const csrfToken = document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='))?.split('=')[1];
+                
+                const saveRes = await fetch('http://localhost:8086/api/scratch/projects/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken || ''
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        title: '自动化测试项目 ' + new Date().toLocaleTimeString(),
+                        description: '由自动化测试创建',
+                        is_public: true,
+                        data_json: projectData
+                    })
+                });
+                
+                const saveData = await saveRes.json();
+                
+                if (saveData.error === null && saveData.data && saveData.data.id) {
+                    log(`✅ 测试 5 通过: 项目保存成功 (ID: ${saveData.data.id})`, 'pass');
+                    testsPassed++;
+                    
+                    window.testProjectId = saveData.data.id;
+                    
+                    // 测试 6: 读取项目
+                    log('📋 测试 6: 读取已保存的项目', 'running');
+                    const getRes = await fetch(`http://localhost:8086/api/scratch/projects/${saveData.data.id}/`, {
+                        credentials: 'include'
+                    });
+                    const getData = await getRes.json();
+                    
+                    if (getData.error === null && getData.data) {
+                        log('✅ 测试 6 通过: 项目读取成功', 'pass');
+                        testsPassed++;
+                    } else {
+                        throw new Error('读取失败');
+                    }
+                    
+                    // 测试 7: 删除项目
+                    log('📋 测试 7: 删除测试项目', 'running');
+                    const delRes = await fetch(`http://localhost:8086/api/scratch/projects/${saveData.data.id}/`, {
+                        method: 'DELETE',
+                        headers: { 'X-CSRFToken': csrfToken || '' },
+                        credentials: 'include'
+                    });
+                    
+                    if (delRes.ok) {
+                        log('✅ 测试 7 通过: 项目删除成功', 'pass');
+                        testsPassed++;
+                    } else {
+                        throw new Error('删除失败');
+                    }
+                } else {
+                    throw new Error(saveData.error || '保存返回数据异常');
+                }
+            } catch (e) {
+                if (e.message.includes('测试 5')) {
+                    log('❌ 测试 5 失败: ' + e.message, 'fail');
+                } else if (e.message.includes('测试 6')) {
+                    log('❌ 测试 6 失败: ' + e.message, 'fail');
+                } else if (e.message.includes('测试 7')) {
+                    log('❌ 测试 7 失败: ' + e.message, 'fail');
+                } else {
+                    log('❌ 测试 4 失败: ' + e.message, 'fail');
+                }
+                testsFailed++;
+            }
+
+            showSummary();
+        }
+
+        function showSummary() {
+            log('', 'info');
+            log('========================================', 'info');
+            log(`总计: ${testsPassed + testsFailed} 个测试`, 'info');
+            log(`通过: ${testsPassed}`, testsPassed > 0 ? 'pass' : 'info');
+            log(`失败: ${testsFailed}`, testsFailed > 0 ? 'fail' : 'info');
+            log('========================================', 'info');
+            
+            if (testsFailed === 0) {
+                log('', 'info');
+                log('🎉 所有测试通过！保存功能完全正常！', 'pass');
+                log('', 'info');
+                log('✅ 你现在可以在编辑器中正常使用保存功能了', 'pass');
+                log('✅ 访问 http://localhost:8081/classroom/scratch/editor', 'pass');
+                log('✅ 创建作品后点击 "文件" → "立即保存"', 'pass');
+            } else {
+                log('', 'info');
+                log('❌ 有测试失败，需要排查问题', 'fail');
+            }
+        }
+
+        // 自动运行
+        window.addEventListener('load', () => {
+            log('⏳ 等待 5 秒让 Scratch 编辑器加载...', 'info');
+            setTimeout(() => {
+                runTests();
+            }, 5000);
+        });
+    </script>
+</body>
+</html>
+

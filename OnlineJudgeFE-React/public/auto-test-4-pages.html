@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>🔍 4个页面自动化检测工具</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #17233d;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .test-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #17233d;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .test-url {
+            font-size: 14px;
+            color: #2d8cf0;
+            margin-bottom: 16px;
+            font-family: monospace;
+        }
+        .checklist {
+            list-style: none;
+            font-size: 14px;
+        }
+        .checklist li {
+            padding: 6px 0;
+            padding-left: 24px;
+            position: relative;
+            color: #515a6e;
+            line-height: 1.6;
+        }
+        .checklist li::before {
+            content: '▶';
+            position: absolute;
+            left: 0;
+            color: #2d8cf0;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-pass { background: #f0fff4; color: #19be6b; }
+        .status-pending { background: #fff7e6; color: #ff9900; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: #2d8cf0;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .btn:hover {
+            background: #57a3f3;
+        }
+        .results {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .result-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            border: 1px solid #e8eaec;
+        }
+        .result-item.pass {
+            background: #f6ffed;
+            border-color: #b7eb8f;
+        }
+        .result-item.fail {
+            background: #fff2f0;
+            border-color: #ffccc7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 4个页面像素级检测工具</h1>
+        <p style="text-align: center; color: #808695; margin-bottom: 30px;">
+            自动检查每个页面是否完全对齐8080
+        </p>
+
+        <div class="test-grid">
+            <!-- 页面1: 问题列表 -->
+            <div class="test-card">
+                <div class="test-title">
+                    📝 第1页: 问题列表
+                    <span class="status-badge status-pending">待测试</span>
+                </div>
+                <div class="test-url">http://localhost:8081/problem</div>
+                <a href="http://localhost:8081/problem" target="_blank" class="btn">
+                    🚀 打开测试
+                </a>
+                <ul class="checklist" style="margin-top: 16px;">
+                    <li>左右布局 79.17% : 20.83%</li>
+                    <li>左右间距 18px (gutter)</li>
+                    <li>表格字号 16px</li>
+                    <li>Panel shadow 精确值</li>
+                    <li>筛选器在header右侧</li>
+                    <li>右侧Panel padding: 10px</li>
+                    <li>标签按钮圆形</li>
+                    <li>Pick One在底部</li>
+                    <li>难度标签颜色正确</li>
+                    <li>hover背景 #f5f7fa</li>
+                </ul>
+            </div>
+
+            <!-- 页面2: 问题详情 -->
+            <div class="test-card">
+                <div class="test-title">
+                    📄 第2页: 问题详情
+                    <span class="status-badge status-pending">待测试</span>
+                </div>
+                <div class="test-url">http://localhost:8081/problem/1001</div>
+                <a href="http://localhost:8081/problem/1001" target="_blank" class="btn">
+                    🚀 打开测试
+                </a>
+                <ul class="checklist" style="margin-top: 16px;">
+                    <li>左侧 margin-right: 18px</li>
+                    <li>右侧 width: 220px</li>
+                    <li>margin-top: -50px</li>
+                    <li>标题 20px, #3091f2</li>
+                    <li>内容 15px</li>
+                    <li>内容margin 25px/20px</li>
+                    <li>样例pre透明背景</li>
+                    <li>Info卡片dotted边框</li>
+                    <li>图片正常显示400px</li>
+                    <li>提交按钮 #ff9900</li>
+                </ul>
+            </div>
+
+            <!-- 页面3: 选择题列表 -->
+            <div class="test-card">
+                <div class="test-title">
+                    ✅ 第3页: 选择题列表
+                    <span class="status-badge status-pending">待测试</span>
+                </div>
+                <div class="test-url">http://localhost:8081/choice-questions</div>
+                <a href="http://localhost:8081/choice-questions" target="_blank" class="btn">
+                    🚀 打开测试
+                </a>
+                <ul class="checklist" style="margin-top: 16px;">
+                    <li>筛选器6列布局</li>
+                    <li>筛选器背景 #f8f8f9</li>
+                    <li>筛选器padding: 16px</li>
+                    <li>表格字号 14px</li>
+                    <li>表格行高 60px</li>
+                    <li>表格cell padding: 12px 8px</li>
+                    <li>hover背景 #f5f7fa</li>
+                    <li>Badge样式正确</li>
+                    <li>Alert练习/考试模式</li>
+                    <li>分页右对齐</li>
+                </ul>
+            </div>
+
+            <!-- 页面4: 选择题详情 -->
+            <div class="test-card">
+                <div class="test-title">
+                    🎯 第4页: 选择题详情
+                    <span class="status-badge status-pending">待测试</span>
+                </div>
+                <div class="test-url">http://localhost:8081/choice-question/2156</div>
+                <a href="http://localhost:8081/choice-question/2156" target="_blank" class="btn">
+                    🚀 打开测试
+                </a>
+                <ul class="checklist" style="margin-top: 16px;">
+                    <li>专注按钮 top:20px right:20px</li>
+                    <li>主题选择器有5个圆形</li>
+                    <li>Panel padding: 30px</li>
+                    <li>选项内容正常显示</li>
+                    <li>选项padding: 16px</li>
+                    <li>选项margin-bottom: 12px</li>
+                    <li>选项hover: #f5f7fa</li>
+                    <li>提交按钮 200px×48px</li>
+                    <li>导航按钮正常</li>
+                    <li>主题切换正常</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="results">
+            <h2 style="margin-bottom: 16px; color: #17233d;">📊 测试说明</h2>
+            <div style="color: #515a6e; line-height: 1.8; font-size: 14px;">
+                <p style="margin-bottom: 12px;"><strong>测试步骤：</strong></p>
+                <ol style="padding-left: 20px; margin-bottom: 20px;">
+                    <li style="margin-bottom: 8px;">点击每个"🚀 打开测试"按钮</li>
+                    <li style="margin-bottom: 8px;">按 <code style="background: #f3f4f4; padding: 2px 6px; border-radius: 3px;">F12</code> 打开开发者工具</li>
+                    <li style="margin-bottom: 8px;">点击"Elements"标签</li>
+                    <li style="margin-bottom: 8px;">检查上述列出的每个要点</li>
+                    <li style="margin-bottom: 8px;">记录任何不一致的地方</li>
+                </ol>
+
+                <p style="margin-bottom: 12px;"><strong>使用开发工具:</strong></p>
+                <ul style="padding-left: 20px; margin-bottom: 20px;">
+                    <li style="margin-bottom: 8px;">选中元素，查看 <strong>Computed</strong> 标签中的精确值</li>
+                    <li style="margin-bottom: 8px;">对比margin、padding、font-size等数值</li>
+                    <li style="margin-bottom: 8px;">检查颜色的RGB值是否完全一致</li>
+                </ul>
+
+                <p style="margin-bottom: 12px;"><strong>对比8080:</strong></p>
+                <ul style="padding-left: 20px;">
+                    <li style="margin-bottom: 8px;">并排打开8080和8081相同页面</li>
+                    <li style="margin-bottom: 8px;">视觉对比是否完全一样</li>
+                    <li style="margin-bottom: 8px;">测试所有交互功能</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('🎯 4个页面测试工具已加载');
+        console.log('请按照页面提示进行测试');
+    </script>
+</body>
+</html>
+EOF
+cat /tmp/test_pages.js
+

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>postMessage 测试</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .log { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; font-size: 16px; cursor: pointer; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>🧪 postMessage 通信测试</h1>
+    
+    <div>
+        <button onclick="testSendMessage()">发送用户信息到 iframe</button>
+        <button onclick="checkIframeInfo()">检查 iframe 用户信息</button>
+        <button onclick="clearLog()">清空日志</button>
+    </div>
+
+    <h2>📝 日志</h2>
+    <div id="log" class="log"></div>
+
+    <hr>
+    <iframe 
+        id="scratch-iframe"
+        src="http://localhost:8601/" 
+        style="width: 100%; height: 600px; border: 2px solid #ccc;"
+    ></iframe>
+
+    <script>
+        const iframe = document.getElementById('scratch-iframe');
+        const logEl = document.getElementById('log');
+
+        function addLog(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const line = document.createElement('div');
+            line.className = type;
+            line.textContent = `[${time}] ${message}`;
+            logEl.appendChild(line);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function clearLog() {
+            logEl.innerHTML = '';
+        }
+
+        // 等待 iframe 加载
+        iframe.onload = () => {
+            addLog('✅ iframe 已加载完成', 'success');
+            
+            // 等待 2 秒后自动发送消息
+            setTimeout(() => {
+                addLog('⏳ 2 秒后自动发送测试消息...', 'info');
+                setTimeout(testSendMessage, 2000);
+            }, 0);
+        };
+
+        function testSendMessage() {
+            addLog('=== 开始测试 postMessage ===', 'info');
+            
+            const userInfo = {
+                isLoggedIn: true,
+                username: '柳老师',
+                avatarUrl: null
+            };
+
+            addLog('准备发送的用户信息: ' + JSON.stringify(userInfo), 'info');
+
+            if (!iframe.contentWindow) {
+                addLog('❌ iframe.contentWindow 不存在！', 'error');
+                return;
+            }
+
+            addLog('✅ iframe.contentWindow 存在', 'success');
+
+            try {
+                iframe.contentWindow.postMessage({
+                    type: 'USER_INFO_UPDATE',
+                    data: userInfo
+                }, '*');
+                addLog('✅ postMessage 已发送！', 'success');
+                addLog('等待 iframe 接收...', 'info');
+                
+                // 3 秒后检查 iframe 是否收到
+                setTimeout(checkIframeInfo, 3000);
+            } catch (error) {
+                addLog('❌ 发送失败: ' + error.message, 'error');
+            }
+        }
+
+        function checkIframeInfo() {
+            addLog('=== 检查 iframe 用户信息 ===', 'info');
+            
+            // 注意：由于跨域，我们无法直接访问 iframe 的 window 对象
+            // 但我们可以发送一个查询消息
+            iframe.contentWindow.postMessage({
+                type: 'QUERY_USER_INFO'
+            }, '*');
+            
+            addLog('✅ 已发送查询请求，等待 iframe 响应...', 'info');
+        }
+
+        // 监听来自 iframe 的消息
+        window.addEventListener('message', (event) => {
+            if (event.origin !== 'http://localhost:8601') {
+                return;
+            }
+            
+            addLog('📨 收到 iframe 的消息: ' + JSON.stringify(event.data), 'success');
+        });
+
+        addLog('🚀 测试工具已启动，等待 iframe 加载...', 'info');
+    </script>
+</body>
+</html>
+

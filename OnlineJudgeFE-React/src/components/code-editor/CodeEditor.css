@@ -1,0 +1,63 @@
+.oj-code-editor {
+  margin: 0 0 15px 0;
+}
+
+.oj-editor-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 5px 15px 5px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.oj-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.oj-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.oj-toolbar-label {
+  color: #606266;
+  font-size: 14px;
+}
+
+.oj-select-trigger {
+  width: 150px;
+  height: 32px;
+  font-size: 14px;
+}
+
+.oj-toolbar-button {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+}
+
+.oj-toolbar-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.oj-file-input {
+  display: none;
+}
+
+.oj-editor-surface {
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.oj-editor-footer {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #909399;
+}
+

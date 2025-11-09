@@ -1,0 +1,786 @@
+/**
+ * AI智慧课堂 - 幻灯片样式
+ * 
+ * 基于MetaSeekOJ设计系统
+ * 优化AI生成的幻灯片展示效果
+ */
+
+/* ========================================
+   全局样式
+   ======================================== */
+
+.reveal {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.reveal .slides {
+  text-align: left;
+}
+
+.reveal .slides section {
+  background: white;
+  border-radius: 24px;
+  padding: 60px 80px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ========================================
+   标题样式
+   ======================================== */
+
+.reveal h1 {
+  font-size: 3.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #3DBAFB 0%, #8ED1A9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 40px;
+  line-height: 1.2;
+}
+
+.reveal h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #525252;
+  margin-bottom: 30px;
+  border-left: 6px solid #3DBAFB;
+  padding-left: 20px;
+  line-height: 1.3;
+}
+
+.reveal h3 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #525252;
+  margin-bottom: 20px;
+  margin-top: 30px;
+}
+
+.reveal h4 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #737373;
+  margin-bottom: 15px;
+}
+
+/* ========================================
+   文本样式
+   ======================================== */
+
+.reveal p {
+  font-size: 1.4rem;
+  color: #525252;
+  line-height: 1.8;
+  margin-bottom: 20px;
+}
+
+.reveal strong {
+  font-weight: 700;
+  color: #3DBAFB;
+}
+
+.reveal em {
+  font-style: italic;
+  color: #8ED1A9;
+}
+
+.reveal a {
+  color: #3DBAFB;
+  text-decoration: none;
+  border-bottom: 2px solid #3DBAFB;
+  transition: all 0.3s;
+}
+
+.reveal a:hover {
+  color: #8ED1A9;
+  border-bottom-color: #8ED1A9;
+}
+
+/* ========================================
+   列表样式
+   ======================================== */
+
+.reveal ul,
+.reveal ol {
+  margin: 20px 0;
+  padding-left: 40px;
+}
+
+.reveal ul li,
+.reveal ol li {
+  font-size: 1.3rem;
+  color: #525252;
+  line-height: 1.8;
+  margin-bottom: 15px;
+  position: relative;
+}
+
+.reveal ul li::marker {
+  color: #3DBAFB;
+  font-size: 1.5em;
+}
+
+.reveal ol li::marker {
+  color: #8ED1A9;
+  font-weight: 700;
+}
+
+/* ========================================
+   代码样式
+   ======================================== */
+
+.reveal code {
+  font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+  background: #2D2D2D;
+  color: #F8F8F2;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 1.1rem;
+}
+
+.reveal pre {
+  margin: 30px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.reveal pre code {
+  display: block;
+  padding: 30px;
+  background: #2D2D2D;
+  color: #F8F8F2;
+  font-size: 1.2rem;
+  line-height: 1.6;
+  overflow-x: auto;
+  border-radius: 12px;
+}
+
+/* 代码高亮颜色 */
+.reveal pre code .keyword {
+  color: #FF79C6;
+}
+
+.reveal pre code .string {
+  color: #F1FA8C;
+}
+
+.reveal pre code .comment {
+  color: #6272A4;
+  font-style: italic;
+}
+
+.reveal pre code .function {
+  color: #50FA7B;
+}
+
+/* 代码语言标签 */
+.reveal .code-language-label {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #F8F8F2;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  opacity: 0.7;
+}
+
+.reveal pre {
+  position: relative;
+}
+
+/* ========================================
+   引用块样式
+   ======================================== */
+
+.reveal blockquote {
+  background: linear-gradient(135deg, #E8F5E9 0%, #E1F5FE 100%);
+  border-left: 6px solid #3DBAFB;
+  padding: 25px 30px;
+  margin: 30px 0;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(61, 186, 251, 0.15);
+  position: relative;
+}
+
+.reveal blockquote::before {
+  content: '💡';
+  font-size: 2rem;
+  position: absolute;
+  left: -10px;
+  top: -10px;
+  background: white;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.reveal blockquote p {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #525252;
+}
+
+/* ========================================
+   表格样式
+   ======================================== */
+
+.reveal .table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  margin: 30px 0;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.reveal table {
+  width: 100%;
+  margin: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.reveal table thead {
+  background: linear-gradient(135deg, #3DBAFB 0%, #8ED1A9 100%);
+}
+
+.reveal table th {
+  padding: 20px;
+  text-align: left;
+  color: white;
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+.reveal table td {
+  padding: 15px 20px;
+  border-bottom: 1px solid #EEEEEE;
+  font-size: 1.1rem;
+  color: #525252;
+}
+
+.reveal table tr:hover td {
+  background: #F5F5F5;
+}
+
+.reveal table tr:last-child td {
+  border-bottom: none;
+}
+
+/* ========================================
+   图片样式
+   ======================================== */
+
+.reveal img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  margin: 30px 0;
+}
+
+.reveal figure {
+  margin: 30px 0;
+}
+
+.reveal figcaption {
+  text-align: center;
+  font-size: 1rem;
+  color: #737373;
+  margin-top: 10px;
+  font-style: italic;
+}
+
+/* ========================================
+   特殊内容块
+   ======================================== */
+
+/* 提示框 */
+.reveal .tip,
+.reveal .note,
+.reveal .warning {
+  padding: 20px 25px;
+  border-radius: 12px;
+  margin: 25px 0;
+  position: relative;
+  padding-left: 60px;
+}
+
+.reveal .tip {
+  background: #E8F5E9;
+  border-left: 4px solid #4CAF50;
+}
+
+.reveal .note {
+  background: #E1F5FE;
+  border-left: 4px solid #2196F3;
+}
+
+.reveal .warning {
+  background: #FFF3E0;
+  border-left: 4px solid #FF9800;
+}
+
+.reveal .tip::before,
+.reveal .note::before,
+.reveal .warning::before {
+  font-size: 1.8rem;
+  position: absolute;
+  left: 20px;
+  top: 20px;
+}
+
+.reveal .tip::before {
+  content: '✅';
+}
+
+.reveal .note::before {
+  content: '📝';
+}
+
+.reveal .warning::before {
+  content: '⚠️';
+}
+
+/* ========================================
+   题目卡片样式 - 参考原型
+   ======================================== */
+
+.reveal .question-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  padding: 40px;
+  color: white;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  max-width: 800px;
+  margin: 40px auto;
+}
+
+.reveal .question-card h3 {
+  color: white !important;
+  margin-bottom: 30px;
+  font-size: 1.8em;
+  border-left: none;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.reveal .question-card .question-text {
+  font-size: 1.3em;
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+
+.reveal .question-card .options {
+  text-align: left;
+}
+
+.reveal .question-card .option {
+  background: rgba(255, 255, 255, 0.2);
+  margin: 15px 0;
+  padding: 15px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 2px solid transparent;
+}
+
+.reveal .question-card .option:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateX(10px);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.reveal .question-card .option.selected {
+  background: rgba(255, 255, 255, 0.4);
+  border-color: white;
+}
+
+.reveal .question-card .option.correct {
+  background: rgba(103, 194, 58, 0.8);
+  border-color: #67C23A;
+}
+
+.reveal .question-card .option.incorrect {
+  background: rgba(245, 108, 108, 0.8);
+  border-color: #F56C6C;
+}
+
+/* ========================================
+   闪卡样式 - 参考原型（3D翻转）
+   ======================================== */
+
+.reveal .flashcard-container {
+  perspective: 1000px;
+  width: 600px;
+  height: 400px;
+  margin: 40px auto;
+}
+
+.reveal .flashcard {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s;
+  cursor: pointer;
+}
+
+.reveal .flashcard.flipped {
+  transform: rotateY(180deg);
+}
+
+.reveal .flashcard-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  padding: 40px;
+}
+
+.reveal .flashcard-front {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.reveal .flashcard-front h3 {
+  color: white !important;
+  font-size: 2em;
+  margin-bottom: 20px;
+  text-align: center;
+  border-left: none;
+}
+
+.reveal .flashcard-front .flip-hint {
+  font-size: 0.8em;
+  opacity: 0.8;
+  margin-top: 30px;
+}
+
+.reveal .flashcard-back {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  transform: rotateY(180deg);
+}
+
+.reveal .flashcard-back h3 {
+  color: white !important;
+  font-size: 1.5em;
+  margin-bottom: 20px;
+  border-left: none;
+}
+
+.reveal .flashcard-back p {
+  font-size: 1.2em;
+  line-height: 1.8;
+  text-align: center;
+}
+
+.reveal .flashcard-back code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 20px;
+  border-radius: 8px;
+  display: block;
+  margin-top: 20px;
+  font-size: 1em;
+  text-align: left;
+}
+
+/* ========================================
+   按钮样式
+   ======================================== */
+
+.reveal button,
+.reveal .button {
+  background: linear-gradient(135deg, #3DBAFB 0%, #8ED1A9 100%);
+  color: white;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 30px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(61, 186, 251, 0.3);
+}
+
+.reveal button:hover,
+.reveal .button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(61, 186, 251, 0.4);
+}
+
+/* ========================================
+   徽章样式
+   ======================================== */
+
+.reveal .badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 5px;
+}
+
+.reveal .badge-primary {
+  background: #3DBAFB;
+  color: white;
+}
+
+.reveal .badge-success {
+  background: #4CAF50;
+  color: white;
+}
+
+.reveal .badge-warning {
+  background: #FFA726;
+  color: white;
+}
+
+.reveal .badge-danger {
+  background: #EF5350;
+  color: white;
+}
+
+/* ========================================
+   进度条样式
+   ======================================== */
+
+.reveal .progress-bar {
+  width: 100%;
+  height: 12px;
+  background: #EEEEEE;
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 20px 0;
+}
+
+.reveal .progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3DBAFB 0%, #8ED1A9 100%);
+  border-radius: 6px;
+  transition: width 0.5s ease;
+}
+
+/* ========================================
+   动画效果
+   ======================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal .animate-fade-in {
+  animation: fadeIn 0.6s ease;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.reveal .animate-slide-in-left {
+  animation: slideInLeft 0.6s ease;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.reveal .animate-slide-in-right {
+  animation: slideInRight 0.6s ease;
+}
+
+/* ========================================
+   响应式设计
+   ======================================== */
+
+@media (max-width: 768px) {
+  .reveal .slides section {
+    padding: 40px 30px;
+  }
+
+  .reveal h1 {
+    font-size: 2.5rem;
+  }
+
+  .reveal h2 {
+    font-size: 2rem;
+  }
+
+  .reveal p,
+  .reveal li {
+    font-size: 1.1rem;
+  }
+
+  .reveal pre code {
+    font-size: 1rem;
+    padding: 20px;
+  }
+}
+
+/* ========================================
+   控制栏样式
+   ======================================== */
+
+.reveal .controls {
+  color: #3DBAFB !important;
+}
+
+.reveal .progress {
+  background: rgba(61, 186, 251, 0.2);
+  color: #3DBAFB;
+}
+
+.reveal .slide-number {
+  background: rgba(61, 186, 251, 0.8);
+  color: white;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 20px;
+}
+
+/* ========================================
+   特殊页面样式
+   ======================================== */
+
+/* 封面页 */
+.reveal .title-slide {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 600px;
+}
+
+.reveal .title-slide h1 {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+.reveal .title-slide .subtitle {
+  font-size: 1.5rem;
+  color: #737373;
+  margin-bottom: 40px;
+}
+
+/* 章节分隔页 */
+.reveal .section-slide {
+  background: linear-gradient(135deg, #3DBAFB 0%, #8ED1A9 100%);
+  color: white;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.reveal .section-slide h2 {
+  color: white;
+  border-left: none;
+  font-size: 3rem;
+}
+
+/* ========================================
+   闪卡/测试题特殊样式
+   ======================================== */
+
+.reveal .flashcard-container,
+.reveal .quiz-container {
+  background: linear-gradient(135deg, #F5F7FA 0%, #C3CFE2 100%);
+  padding: 40px;
+  border-radius: 16px;
+  margin: 30px 0;
+}
+
+.reveal .flashcard-card {
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.reveal .quiz-question {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.reveal .quiz-option {
+  background: white;
+  padding: 15px 20px;
+  border-radius: 8px;
+  border: 2px solid #EEEEEE;
+  margin: 10px 0;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.reveal .quiz-option:hover {
+  border-color: #3DBAFB;
+  background: #F5F9FF;
+}
+
+.reveal .quiz-option.selected {
+  border-color: #3DBAFB;
+  background: #E3F2FD;
+}
+
+.reveal .quiz-option.correct {
+  border-color: #4CAF50;
+  background: #E8F5E9;
+}
+
+.reveal .quiz-option.incorrect {
+  border-color: #EF5350;
+  background: #FFEBEE;
+}
+

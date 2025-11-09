@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自动化样式对比工具 - 8080 vs 8081</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+        }
+        h1 { text-align: center; margin-bottom: 30px; font-size: 32px; }
+        .section { margin: 20px 0; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px; }
+        .section h2 { margin-bottom: 15px; font-size: 20px; border-bottom: 2px solid rgba(255,255,255,0.3); padding-bottom: 10px; }
+        .comparison-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+        .comparison-table th { background: rgba(255,255,255,0.2); padding: 10px; text-align: left; border: 1px solid rgba(255,255,255,0.1); }
+        .comparison-table td { padding: 8px 10px; border: 1px solid rgba(255,255,255,0.1); }
+        .match { background: rgba(82,196,26,0.2); }
+        .diff { background: rgba(255,77,79,0.2); }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            text-decoration: none;
+            margin: 10px 5px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            font-size: 14px;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,255,255,0.3); }
+        .loading { text-align: center; padding: 40px; }
+        .spinner { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .iframe-container { position: fixed; top: -9999px; left: -9999px; }
+        pre { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 12px; }
+        .status { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-left: 10px; }
+        .status.ok { background: rgba(82,196,26,0.3); border: 1px solid rgba(82,196,26,0.5); }
+        .status.fail { background: rgba(255,77,79,0.3); border: 1px solid rgba(255,77,79,0.5); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 自动化样式对比工具</h1>
+        
+        <div class="section">
+            <h2>📊 测试状态</h2>
+            <div id="status">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>正在加载页面并提取样式...</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section" id="results" style="display:none;">
+            <h2>📋 对比结果</h2>
+            <div id="summary"></div>
+            <div id="details"></div>
+        </div>
+        
+        <div class="section">
+            <h2>🎯 操作</h2>
+            <button class="btn" onclick="runTest()">🔄 重新测试</button>
+            <button class="btn" onclick="copyReport()">📋 复制报告</button>
+            <button class="btn" onclick="window.open('http://localhost:8080/problem', '_blank')">🔗 打开8080</button>
+            <button class="btn" onclick="window.open('http://localhost:8081/problem', '_blank')">🔗 打开8081</button>
+        </div>
+    </div>
+    
+    <div class="iframe-container">
+        <iframe id="iframe-8080" src="" width="1200" height="800"></iframe>
+        <iframe id="iframe-8081" src="" width="1200" height="800"></iframe>
+    </div>
+    
+    <script>
+        let fullReport = '';
+        
+        function extractStyles(doc, version) {
+            const report = { version };
+            
+            try {
+                // 1. Body背景
+                report.bodyBg = window.getComputedStyle(doc.body).backgroundColor;
+                
+                // 2. 主容器
+                const container = doc.querySelector('.content-app') || 
+                                doc.querySelector('[style*="padding"]') ||
+                                doc.querySelector('main')?.parentElement;
+                if (container) {
+                    const styles = window.getComputedStyle(container);
+                    report.containerPadding = styles.padding;
+                    report.containerBg = styles.backgroundColor;
+                    report.containerMarginTop = styles.marginTop;
+                }
+                
+                // 3. Panel/Card
+                const panel = doc.querySelector('.ivu-card') || 
+                            doc.querySelector('[class*="card"]');
+                if (panel) {
+                    const styles = window.getComputedStyle(panel);
+                    report.panelBg = styles.backgroundColor;
+                    report.panelBorder = styles.border;
+                    report.panelBorderRadius = styles.borderRadius;
+                    report.panelBoxShadow = styles.boxShadow;
+                }
+                
+                // 4. Table
+                const table = doc.querySelector('table');
+                if (table) {
+                    const styles = window.getComputedStyle(table);
+                    report.tableFontSize = styles.fontSize;
+                    report.tableBg = styles.backgroundColor;
+                    report.tableWidth = styles.width;
+                    
+                    // Table Header
+                    const th = table.querySelector('th');
+                    if (th) {
+                        const thStyles = window.getComputedStyle(th);
+                        report.thBg = thStyles.backgroundColor;
+                        report.thColor = thStyles.color;
+                        report.thFontWeight = thStyles.fontWeight;
+                        report.thPadding = thStyles.padding;
+                    }
+                    
+                    // Table Cell
+                    const td = table.querySelector('td');
+                    if (td) {
+                        const tdStyles = window.getComputedStyle(td);
+                        report.tdPadding = tdStyles.padding;
+                        report.tdFontSize = tdStyles.fontSize;
+                        report.tdColor = tdStyles.color;
+                    }
+                    
+                    // Table Row
+                    const tr = table.querySelector('tbody tr');
+                    if (tr) {
+                        const trStyles = window.getComputedStyle(tr);
+                        report.trBg = trStyles.backgroundColor;
+                        report.trBorder = trStyles.borderBottom;
+                    }
+                }
+                
+                // 5. 难度标签
+                const tags = doc.querySelectorAll('.ivu-tag, [class*="badge"]');
+                report.difficultyTags = [];
+                tags.forEach((tag, i) => {
+                    if (i < 3) { // 只检查前3个
+                        const styles = window.getComputedStyle(tag);
+                        report.difficultyTags.push({
+                            text: tag.textContent.trim(),
+                            bg: styles.backgroundColor,
+                            color: styles.color,
+                            borderRadius: styles.borderRadius,
+                            padding: styles.padding
+                        });
+                    }
+                });
+                
+                // 6. 按钮
+                const buttons = doc.querySelectorAll('button, .ivu-btn');
+                if (buttons.length > 0) {
+                    const btnStyles = window.getComputedStyle(buttons[0]);
+                    report.buttonBg = btnStyles.backgroundColor;
+                    report.buttonColor = btnStyles.color;
+                    report.buttonPadding = btnStyles.padding;
+                    report.buttonBorderRadius = btnStyles.borderRadius;
+                }
+                
+            } catch (e) {
+                report.error = e.message;
+            }
+            
+            return report;
+        }
+        
+        function compareReports(report8080, report8081) {
+            const differences = [];
+            const matches = [];
+            
+            const keys = new Set([...Object.keys(report8080), ...Object.keys(report8081)]);
+            
+            keys.forEach(key => {
+                if (key === 'version' || key === 'difficultyTags') return;
+                
+                const val8080 = report8080[key];
+                const val8081 = report8081[key];
+                
+                if (val8080 === val8081) {
+                    matches.push({ key, value: val8080 });
+                } else {
+                    differences.push({ key, val8080, val8081 });
+                }
+            });
+            
+            return { differences, matches };
+        }
+        
+        function displayResults(report8080, report8081, comparison) {
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+            const summaryDiv = document.getElementById('summary');
+            const detailsDiv = document.getElementById('details');
+            
+            statusDiv.style.display = 'none';
+            resultsDiv.style.display = 'block';
+            
+            // Summary
+            const totalChecks = comparison.differences.length + comparison.matches.length;
+            const matchRate = totalChecks > 0 ? ((comparison.matches.length / totalChecks) * 100).toFixed(1) : 0;
+            
+            summaryDiv.innerHTML = `
+                <div style="display: flex; justify-content: space-around; margin: 20px 0;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 36px; font-weight: bold; color: ${comparison.differences.length === 0 ? '#52c41a' : '#ff4d4f'};">${comparison.differences.length}</div>
+                        <div>差异项</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 36px; font-weight: bold; color: #52c41a;">${comparison.matches.length}</div>
+                        <div>匹配项</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 36px; font-weight: bold;">${matchRate}%</div>
+                        <div>匹配度</div>
+                    </div>
+                </div>
+            `;
+            
+            // Details
+            let html = '<h3 style="margin: 20px 0 10px 0;">❌ 需要修复的差异 (' + comparison.differences.length + '项)</h3>';
+            
+            if (comparison.differences.length > 0) {
+                html += '<table class="comparison-table">';
+                html += '<tr><th>样式属性</th><th>8080 (标准)</th><th>8081 (当前)</th><th>状态</th></tr>';
+                
+                comparison.differences.forEach(diff => {
+                    html += `<tr class="diff">
+                        <td><strong>${diff.key}</strong></td>
+                        <td>${diff.val8080 || 'N/A'}</td>
+                        <td>${diff.val8081 || 'N/A'}</td>
+                        <td><span class="status fail">需修复</span></td>
+                    </tr>`;
+                });
+                
+                html += '</table>';
+            } else {
+                html += '<p style="color: #52c41a; padding: 20px; text-align: center; font-size: 18px;">🎉 完美！所有样式已对齐！</p>';
+            }
+            
+            html += '<h3 style="margin: 30px 0 10px 0;">✅ 已匹配的样式 (' + comparison.matches.length + '项)</h3>';
+            html += '<table class="comparison-table">';
+            html += '<tr><th>样式属性</th><th>值</th><th>状态</th></tr>';
+            
+            comparison.matches.forEach(match => {
+                html += `<tr class="match">
+                    <td><strong>${match.key}</strong></td>
+                    <td>${match.value || 'N/A'}</td>
+                    <td><span class="status ok">✓</span></td>
+                </tr>`;
+            });
+            
+            html += '</table>';
+            
+            // 难度标签对比
+            if (report8080.difficultyTags && report8081.difficultyTags) {
+                html += '<h3 style="margin: 30px 0 10px 0;">🎨 难度标签颜色对比</h3>';
+                html += '<table class="comparison-table">';
+                html += '<tr><th>标签</th><th>8080 背景</th><th>8080 文字</th><th>8081 背景</th><th>8081 文字</th><th>状态</th></tr>';
+                
+                const maxLen = Math.max(report8080.difficultyTags.length, report8081.difficultyTags.length);
+                for (let i = 0; i < maxLen; i++) {
+                    const tag8080 = report8080.difficultyTags[i] || {};
+                    const tag8081 = report8081.difficultyTags[i] || {};
+                    const bgMatch = tag8080.bg === tag8081.bg;
+                    const colorMatch = tag8080.color === tag8081.color;
+                    const match = bgMatch && colorMatch;
+                    
+                    html += `<tr class="${match ? 'match' : 'diff'}">
+                        <td>${tag8080.text || tag8081.text || 'Tag' + (i+1)}</td>
+                        <td>${tag8080.bg || 'N/A'}</td>
+                        <td>${tag8080.color || 'N/A'}</td>
+                        <td>${tag8081.bg || 'N/A'}</td>
+                        <td>${tag8081.color || 'N/A'}</td>
+                        <td><span class="status ${match ? 'ok' : 'fail'}">${match ? '✓' : '需修复'}</span></td>
+                    </tr>`;
+                }
+                
+                html += '</table>';
+            }
+            
+            detailsDiv.innerHTML = html;
+            
+            // 生成修复建议
+            if (comparison.differences.length > 0) {
+                html = '<h3 style="margin: 30px 0 10px 0;">🔧 修复建议</h3>';
+                html += '<pre style="white-space: pre-wrap;">';
+                html += '// 在 ProblemList.tsx 中修复以下样式：\n\n';
+                
+                comparison.differences.forEach(diff => {
+                    html += `// ${diff.key}\n`;
+                    html += `// 当前: ${diff.val8081}\n`;
+                    html += `// 应改为: ${diff.val8080}\n\n`;
+                });
+                
+                html += '</pre>';
+                detailsDiv.innerHTML += html;
+            }
+            
+            // 保存完整报告
+            fullReport = JSON.stringify({ report8080, report8081, comparison }, null, 2);
+        }
+        
+        async function runTest() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>正在加载 8080 页面...</p></div>';
+            
+            const iframe8080 = document.getElementById('iframe-8080');
+            const iframe8081 = document.getElementById('iframe-8081');
+            
+            // 加载8080
+            iframe8080.src = 'http://localhost:8080/problem';
+            
+            await new Promise((resolve) => {
+                iframe8080.onload = () => setTimeout(resolve, 2000); // 等待页面渲染
+            });
+            
+            statusDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>正在提取 8080 样式...</p></div>';
+            
+            let report8080;
+            try {
+                report8080 = extractStyles(iframe8080.contentDocument, '8080');
+            } catch (e) {
+                statusDiv.innerHTML = '<div style="color: #ff4d4f; padding: 20px;">❌ 无法访问8080页面（跨域限制）<br>请确保此HTML在同源环境下运行</div>';
+                return;
+            }
+            
+            // 加载8081
+            statusDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>正在加载 8081 页面...</p></div>';
+            iframe8081.src = 'http://localhost:8081/problem';
+            
+            await new Promise((resolve) => {
+                iframe8081.onload = () => setTimeout(resolve, 2000);
+            });
+            
+            statusDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>正在提取 8081 样式...</p></div>';
+            
+            const report8081 = extractStyles(iframe8081.contentDocument, '8081');
+            
+            // 对比
+            statusDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>正在对比差异...</p></div>';
+            
+            const comparison = compareReports(report8080, report8081);
+            
+            // 显示结果
+            displayResults(report8080, report8081, comparison);
+        }
+        
+        function copyReport() {
+            navigator.clipboard.writeText(fullReport).then(() => {
+                alert('📋 完整报告已复制到剪贴板！');
+            });
+        }
+        
+        // 自动开始测试
+        window.addEventListener('load', () => {
+            setTimeout(runTest, 1000);
+        });
+    </script>
+</body>
+</html>
+
+

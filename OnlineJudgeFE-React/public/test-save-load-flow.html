@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>保存/加载流程自动化测试</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 6px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .status-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #007bff;
+        }
+        .status-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .status-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        .info { color: #17a2b8; }
+        .metric {
+            display: inline-block;
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin: 2px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 保存/加载流程性能测试</h1>
+    
+    <div class="test-section">
+        <h2>📊 实时状态</h2>
+        <div class="status-grid">
+            <div class="status-card">
+                <div class="status-label">iframe 状态</div>
+                <div class="status-value" id="iframeStatus">检查中...</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">VM 状态</div>
+                <div class="status-value" id="vmStatus">检查中...</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">当前积木数</div>
+                <div class="status-value" id="blockCount">-</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">项目 ID</div>
+                <div class="status-value" id="projectId">-</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🎮 测试控制</h2>
+        <div class="test-controls">
+            <button onclick="checkStatus()">检查状态</button>
+            <button onclick="testSave()">测试保存</button>
+            <button onclick="testLoad()">测试加载</button>
+            <button onclick="runFullTest()">完整测试</button>
+            <button onclick="clearLog()">清空日志</button>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📝 测试日志</h2>
+        <div class="log" id="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📈 性能指标</h2>
+        <div id="metrics"></div>
+    </div>
+
+    <script>
+        const logDiv = document.getElementById('log');
+        let metrics = {
+            saveTime: [],
+            loadTime: [],
+            exportTime: [],
+            thumbnailTime: []
+        };
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            logDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function clearLog() {
+            logDiv.innerHTML = '';
+            log('日志已清空', 'info');
+        }
+        
+        function updateMetrics() {
+            const metricsDiv = document.getElementById('metrics');
+            const avg = (arr) => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(2) : '-';
+            
+            metricsDiv.innerHTML = `
+                <span class="metric">平均保存时间: ${avg(metrics.saveTime)}ms</span>
+                <span class="metric">平均加载时间: ${avg(metrics.loadTime)}ms</span>
+                <span class="metric">平均导出时间: ${avg(metrics.exportTime)}ms</span>
+                <span class="metric">平均截图时间: ${avg(metrics.thumbnailTime)}ms</span>
+                <span class="metric">测试次数: ${metrics.saveTime.length}</span>
+            `;
+        }
+        
+        async function checkStatus() {
+            log('🔍 检查系统状态...', 'info');
+            
+            // 检查 iframe
+            const editorWindow = window.opener || window.parent;
+            if (!editorWindow || editorWindow === window) {
+                log('❌ 此页面需要从编辑器页面打开', 'error');
+                document.getElementById('iframeStatus').textContent = '未连接';
+                return false;
+            }
+            
+            try {
+                // 尝试访问编辑器页面的 DOM
+                const iframe = editorWindow.document.querySelector('iframe[src*="8601"]');
+                document.getElementById('iframeStatus').textContent = iframe ? '✅ 就绪' : '❌ 未找到';
+                
+                if (!iframe) {
+                    log('❌ 未找到 Scratch iframe', 'error');
+                    return false;
+                }
+                
+                // 检查 VM
+                const vm = iframe.contentWindow?.vm;
+                document.getElementById('vmStatus').textContent = vm ? '✅ 就绪' : '❌ 未初始化';
+                
+                if (vm) {
+                    const blocks = vm.runtime?.targets?.[0]?.blocks?._blocks?.size || 0;
+                    document.getElementById('blockCount').textContent = blocks;
+                    log(`✅ VM 已就绪，当前积木数: ${blocks}`, 'success');
+                } else {
+                    log('⚠️ VM 未初始化', 'warning');
+                }
+                
+                // 获取项目 ID
+                const url = editorWindow.location.pathname;
+                const match = url.match(/\/edit\/(\d+)/);
+                if (match) {
+                    document.getElementById('projectId').textContent = match[1];
+                    log(`📋 项目 ID: ${match[1]}`, 'info');
+                }
+                
+                return true;
+            } catch (e) {
+                log('❌ 无法访问编辑器（可能是跨域限制）: ' + e.message, 'error');
+                return false;
+            }
+        }
+        
+        async function testSave() {
+            log('💾 开始保存测试...', 'info');
+            const startTime = performance.now();
+            
+            const editorWindow = window.opener || window.parent;
+            if (!editorWindow) {
+                log('❌ 未连接到编辑器', 'error');
+                return;
+            }
+            
+            try {
+                // 触发保存
+                if (editorWindow.scratchSaveHandler) {
+                    log('📨 调用保存处理器...', 'info');
+                    await editorWindow.scratchSaveHandler();
+                    
+                    const elapsed = performance.now() - startTime;
+                    metrics.saveTime.push(elapsed);
+                    updateMetrics();
+                    
+                    log(`✅ 保存完成！耗时: ${elapsed.toFixed(0)}ms`, 'success');
+                } else {
+                    log('❌ 保存处理器不存在', 'error');
+                }
+            } catch (e) {
+                log('❌ 保存失败: ' + e.message, 'error');
+            }
+        }
+        
+        async function testLoad() {
+            log('📂 开始加载测试...', 'info');
+            const startTime = performance.now();
+            
+            log('💡 请手动刷新编辑器页面进行加载测试', 'warning');
+            log('   或关闭此窗口后重新打开编辑器', 'info');
+        }
+        
+        async function runFullTest() {
+            log('🚀 开始完整测试流程...', 'info');
+            log('━'.repeat(50), 'info');
+            
+            if (!await checkStatus()) {
+                log('❌ 状态检查失败，中止测试', 'error');
+                return;
+            }
+            
+            log('⏳ 等待 2 秒后开始测试...', 'info');
+            await new Promise(r => setTimeout(r, 2000));
+            
+            // 测试 1: 保存
+            log('📋 测试 1/3: 保存功能', 'info');
+            await testSave();
+            
+            await new Promise(r => setTimeout(r, 1000));
+            
+            // 测试 2: 导出性能
+            log('📋 测试 2/3: 导出性能', 'info');
+            const exportStart = performance.now();
+            const editorWindow = window.opener || window.parent;
+            const iframe = editorWindow.document.querySelector('iframe[src*="8601"]');
+            
+            if (iframe?.contentWindow) {
+                iframe.contentWindow.postMessage({ type: 'EXPORT_PROJECT_REQUEST' }, 'http://localhost:8601');
+                
+                const handler = (event) => {
+                    if (event.data?.type === 'EXPORT_PROJECT_RESPONSE') {
+                        const elapsed = performance.now() - exportStart;
+                        metrics.exportTime.push(elapsed);
+                        updateMetrics();
+                        log(`✅ 导出完成！耗时: ${elapsed.toFixed(0)}ms`, 'success');
+                        window.removeEventListener('message', handler);
+                    }
+                };
+                window.addEventListener('message', handler);
+                
+                setTimeout(() => {
+                    window.removeEventListener('message', handler);
+                    log('⏰ 导出超时', 'warning');
+                }, 5000);
+            }
+            
+            await new Promise(r => setTimeout(r, 2000));
+            
+            log('━'.repeat(50), 'info');
+            log('✅ 完整测试完成！', 'success');
+            log('📊 查看性能指标了解详细数据', 'info');
+        }
+        
+        // 页面加载时自动检查状态
+        window.onload = () => {
+            log('🚀 测试工具已就绪', 'success');
+            log('💡 提示：此页面需要从编辑器页面打开（右键新窗口）', 'info');
+            log('💡 或在编辑器控制台运行: window.open("/test-save-load-flow.html")', 'info');
+            
+            setTimeout(checkStatus, 1000);
+        };
+    </script>
+</body>
+</html>
+
+

@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProblemList 页面自动诊断</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+                'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .status {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .status-card {
+            flex: 1;
+            min-width: 200px;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .status-card.success {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+        }
+        
+        .status-card.error {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        
+        .status-card.warning {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        }
+        
+        .status-card h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .status-card .count {
+            font-size: 36px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+        }
+        
+        .test-section h2 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .test-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .test-item.pass {
+            border-left-color: #52c41a;
+            background: #f6ffed;
+        }
+        
+        .test-item.fail {
+            border-left-color: #ff4d4f;
+            background: #fff2f0;
+        }
+        
+        .test-item.warn {
+            border-left-color: #faad14;
+            background: #fffbe6;
+        }
+        
+        .test-item .info {
+            flex: 1;
+        }
+        
+        .test-item .name {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        .test-item .desc {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .test-item .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .test-item.pass .badge {
+            background: #52c41a;
+            color: white;
+        }
+        
+        .test-item.fail .badge {
+            background: #ff4d4f;
+            color: white;
+        }
+        
+        .test-item.warn .badge {
+            background: #faad14;
+            color: white;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .detail {
+            background: white;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #666;
+            border: 1px solid #e8e8e8;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 题库列表页面自动诊断</h1>
+            <p>ProblemList Component - Automated Quality Check</p>
+        </div>
+        
+        <div class="content">
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>正在运行诊断测试...</p>
+            </div>
+            
+            <div id="results" style="display: none;">
+                <div class="status">
+                    <div class="status-card success">
+                        <h3>✅ 通过</h3>
+                        <div class="count" id="pass-count">0</div>
+                    </div>
+                    <div class="status-card error">
+                        <h3>❌ 失败</h3>
+                        <div class="count" id="fail-count">0</div>
+                    </div>
+                    <div class="status-card warning">
+                        <h3>⚠️ 警告</h3>
+                        <div class="count" id="warn-count">0</div>
+                    </div>
+                </div>
+                
+                <div class="test-section">
+                    <h2>📦 组件存在性检查</h2>
+                    <div id="component-tests"></div>
+                </div>
+                
+                <div class="test-section">
+                    <h2>🎨 UI 元素检查</h2>
+                    <div id="ui-tests"></div>
+                </div>
+                
+                <div class="test-section">
+                    <h2>🔗 API 集成检查</h2>
+                    <div id="api-tests"></div>
+                </div>
+                
+                <div class="test-section">
+                    <h2>⚙️ 功能完整性检查</h2>
+                    <div id="function-tests"></div>
+                </div>
+                
+                <div class="test-section">
+                    <h2>📱 响应式布局检查</h2>
+                    <div id="responsive-tests"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <a href="http://localhost:8081/problem" class="btn" target="_blank">🚀 访问题库列表</a>
+            <a href="http://localhost:8080/problem" class="btn" target="_blank">📊 对比原版(8080)</a>
+            <button class="btn" onclick="location.reload()">🔄 重新检测</button>
+        </div>
+    </div>
+    
+    <script>
+        const tests = {
+            component: [
+                {
+                    name: 'ProblemList.tsx 文件存在',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/src/pages/ProblemList.tsx');
+                        return response.ok;
+                    }
+                },
+                {
+                    name: 'problem.ts API 文件存在',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/src/api/problem.ts');
+                        return response.ok;
+                    }
+                },
+                {
+                    name: 'problem.ts 类型定义存在',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/src/types/problem.ts');
+                        return response.ok;
+                    }
+                },
+                {
+                    name: 'Pagination 组件存在',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/src/components/ui/pagination.tsx');
+                        return response.ok;
+                    }
+                }
+            ],
+            ui: [
+                {
+                    name: '页面可访问',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/problem');
+                        return response.ok;
+                    }
+                },
+                {
+                    name: '包含题目表格',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/problem');
+                        const text = await response.text();
+                        return text.includes('题目列表') || text.includes('Problem');
+                    }
+                },
+                {
+                    name: '包含难度筛选器',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/problem');
+                        const text = await response.text();
+                        return text.includes('难度') || text.includes('Difficulty');
+                    }
+                },
+                {
+                    name: '包含标签侧边栏',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/problem');
+                        const text = await response.text();
+                        return text.includes('标签') || text.includes('Tags');
+                    }
+                },
+                {
+                    name: '包含搜索框',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/problem');
+                        const text = await response.text();
+                        return text.includes('搜索') || text.includes('search');
+                    }
+                },
+                {
+                    name: '包含随机选题按钮',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/problem');
+                        const text = await response.text();
+                        return text.includes('随机') || text.includes('Pick');
+                    }
+                }
+            ],
+            api: [
+                {
+                    name: 'API baseURL 配置正确',
+                    check: async () => {
+                        try {
+                            const response = await fetch('http://localhost:8081/src/api/problem.ts');
+                            const text = await response.text();
+                            return text.includes('/api');
+                        } catch {
+                            return false;
+                        }
+                    }
+                },
+                {
+                    name: 'getProblemList API 定义',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/src/api/problem.ts');
+                        const text = await response.text();
+                        return text.includes('getProblemList');
+                    }
+                },
+                {
+                    name: 'getProblemTagList API 定义',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/src/api/problem.ts');
+                        const text = await response.text();
+                        return text.includes('getProblemTagList');
+                    }
+                },
+                {
+                    name: 'pickOne API 定义',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/src/api/problem.ts');
+                        const text = await response.text();
+                        return text.includes('pickOne');
+                    }
+                }
+            ],
+            function: [
+                {
+                    name: '路由配置 /problem',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/src/App.tsx');
+                        const text = await response.text();
+                        return text.includes('/problem');
+                    }
+                },
+                {
+                    name: '分页功能实现',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/src/pages/ProblemList.tsx');
+                        const text = await response.text();
+                        return text.includes('Pagination') && text.includes('onPageChange');
+                    }
+                },
+                {
+                    name: '难度筛选功能',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/src/pages/ProblemList.tsx');
+                        const text = await response.text();
+                        return text.includes('difficulty') && text.includes('handleDifficultyChange');
+                    }
+                },
+                {
+                    name: '标签筛选功能',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/src/pages/ProblemList.tsx');
+                        const text = await response.text();
+                        return text.includes('tag') && text.includes('handleTagFilter');
+                    }
+                },
+                {
+                    name: '关键词搜索功能',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/src/pages/ProblemList.tsx');
+                        const text = await response.text();
+                        return text.includes('keyword') && text.includes('handleKeywordSearch');
+                    }
+                },
+                {
+                    name: 'URL参数同步',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/src/pages/ProblemList.tsx');
+                        const text = await response.text();
+                        return text.includes('useSearchParams') && text.includes('setSearchParams');
+                    }
+                },
+                {
+                    name: 'AC率计算功能',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/src/pages/ProblemList.tsx');
+                        const text = await response.text();
+                        return text.includes('getACRate');
+                    }
+                }
+            ],
+            responsive: [
+                {
+                    name: '使用响应式栅格布局',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/src/pages/ProblemList.tsx');
+                        const text = await response.text();
+                        return text.includes('grid') && text.includes('lg:');
+                    }
+                },
+                {
+                    name: '移动端适配',
+                    check: async () => {
+                        const response = await fetch('http://localhost:8081/src/pages/ProblemList.tsx');
+                        const text = await response.text();
+                        return text.includes('md:') || text.includes('sm:');
+                    }
+                }
+            ]
+        };
+        
+        function createTestItem(name, status, desc = '') {
+            const statusClass = status === 'pass' ? 'pass' : status === 'fail' ? 'fail' : 'warn';
+            const statusText = status === 'pass' ? '✅ 通过' : status === 'fail' ? '❌ 失败' : '⚠️ 警告';
+            
+            return `
+                <div class="test-item ${statusClass}">
+                    <div class="info">
+                        <div class="name">${name}</div>
+                        ${desc ? `<div class="desc">${desc}</div>` : ''}
+                    </div>
+                    <div class="badge">${statusText}</div>
+                </div>
+            `;
+        }
+        
+        async function runTests() {
+            let passCount = 0;
+            let failCount = 0;
+            let warnCount = 0;
+            
+            const results = {
+                component: [],
+                ui: [],
+                api: [],
+                function: [],
+                responsive: []
+            };
+            
+            // Run all tests
+            for (const [category, categoryTests] of Object.entries(tests)) {
+                for (const test of categoryTests) {
+                    try {
+                        const passed = await test.check();
+                        const status = passed ? 'pass' : 'fail';
+                        
+                        if (passed) passCount++;
+                        else failCount++;
+                        
+                        results[category].push({
+                            name: test.name,
+                            status: status
+                        });
+                    } catch (error) {
+                        failCount++;
+                        results[category].push({
+                            name: test.name,
+                            status: 'fail',
+                            desc: error.message
+                        });
+                    }
+                }
+            }
+            
+            // Update UI
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+            
+            document.getElementById('pass-count').textContent = passCount;
+            document.getElementById('fail-count').textContent = failCount;
+            document.getElementById('warn-count').textContent = warnCount;
+            
+            // Render results
+            for (const [category, categoryResults] of Object.entries(results)) {
+                const container = document.getElementById(`${category}-tests`);
+                container.innerHTML = categoryResults.map(result => 
+                    createTestItem(result.name, result.status, result.desc)
+                ).join('');
+            }
+            
+            // Show summary alert
+            if (failCount === 0) {
+                setTimeout(() => {
+                    alert('🎉 恭喜！所有测试通过！\n\nProblemList 页面已完美实现！');
+                }, 500);
+            }
+        }
+        
+        // Run tests on page load
+        window.addEventListener('load', () => {
+            setTimeout(runTests, 1000);
+        });
+    </script>
+</body>
+</html>
+

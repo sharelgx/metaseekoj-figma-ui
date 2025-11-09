@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8080 vs 8081 自动诊断系统</title>
+    <style>
+        body {
+            font-family: monospace;
+            margin: 0;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        #results {
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .success { color: #4ec9b0; }
+        .error { color: #f48771; }
+        .warning { color: #dcdcaa; }
+        .info { color: #569cd6; }
+    </style>
+</head>
+<body>
+    <div id="results">正在自动诊断...</div>
+    
+    <script>
+        // 自动诊断脚本 - 页面加载时自动运行
+        (function() {
+            const output = [];
+            
+            function log(msg, type = 'info') {
+                const className = type;
+                output.push({ msg, className });
+            }
+            
+            function render() {
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = output.map(item => 
+                    `<span class="${item.className}">${item.msg}</span>`
+                ).join('\n');
+            }
+            
+            // 等待页面完全加载
+            setTimeout(() => {
+                log('╔════════════════════════════════════════════════════════════════╗', 'info');
+                log('║  🤖 8081 自动诊断系统                                         ║', 'info');
+                log('╚════════════════════════════════════════════════════════════════╝', 'info');
+                log('');
+                
+                const port = window.location.port;
+                log(`📍 当前端口: ${port}`, 'info');
+                log('');
+                
+                // 诊断1: 层级遮挡检查
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                log('1️⃣  层级遮挡检查', 'warning');
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                log('');
+                
+                const layers = [
+                    { selector: 'body', name: 'body' },
+                    { selector: '#root', name: '#root' },
+                    { selector: '.min-h-screen', name: 'min-h-screen容器' },
+                    { selector: 'main', name: 'main' },
+                    { selector: 'main > *:first-child', name: '第一个section' },
+                ];
+                
+                layers.forEach(layer => {
+                    const el = document.querySelector(layer.selector);
+                    if (el) {
+                        const style = getComputedStyle(el);
+                        const bg = style.backgroundColor;
+                        const bgImage = style.backgroundImage;
+                        const opacity = style.opacity;
+                        const filter = style.filter;
+                        
+                        log(`${layer.name}:`, 'info');
+                        
+                        if (bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
+                            log(`  background-color: ${bg}`, 'success');
+                        } else {
+                            log(`  background-color: transparent`, 'warning');
+                        }
+                        
+                        if (bgImage !== 'none') {
+                            log(`  background-image: ${bgImage.substring(0, 80)}...`, 'success');
+                        }
+                        
+                        if (opacity !== '1') {
+                            log(`  ⚠️  opacity: ${opacity}`, 'error');
+                        }
+                        
+                        if (filter !== 'none') {
+                            log(`  ⚠️  filter: ${filter}`, 'error');
+                        }
+                        
+                        log('');
+                    }
+                });
+                
+                // 诊断2: content-app容器检查
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                log('2️⃣  content-app容器检查', 'warning');
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                log('');
+                
+                const contentApp = document.querySelector('main')?.parentElement;
+                if (contentApp) {
+                    const style = getComputedStyle(contentApp);
+                    const bg = style.backgroundColor;
+                    
+                    log('content-app (main的父容器):', 'info');
+                    log(`  padding: ${style.padding}`, 'success');
+                    log(`  width: ${style.width}`, 'success');
+                    log(`  background-color: ${bg}`, bg === 'rgba(0, 0, 0, 0)' || bg === 'transparent' ? 'success' : 'error');
+                    
+                    if (bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
+                        log('  ❌ 问题: background应该是transparent，让padding露出父背景！', 'error');
+                    } else {
+                        log('  ✅ 正确: background是透明的', 'success');
+                    }
+                    log('');
+                }
+                
+                // 诊断3: Hero区域检查
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                log('3️⃣  Hero区域颜色检查', 'warning');
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                log('');
+                
+                const title = document.querySelector('h1');
+                if (title) {
+                    const style = getComputedStyle(title);
+                    log('标题:', 'info');
+                    log(`  color: ${style.color}`, 'success');
+                    
+                    const expected = 'rgb(73, 80, 96)';
+                    if (style.color === expected) {
+                        log(`  ✅ 正确: ${expected} (iView灰色)`, 'success');
+                    } else {
+                        log(`  ❌ 错误: 应该是 ${expected}`, 'error');
+                    }
+                    log('');
+                    
+                    // 检查渐变文字
+                    const gradientSpan = title.querySelector('span');
+                    if (gradientSpan) {
+                        const spanStyle = getComputedStyle(gradientSpan);
+                        log('渐变文字 "闯编程关卡!":', 'info');
+                        log(`  background-image: ${spanStyle.backgroundImage.substring(0, 80)}...`, 'success');
+                        log(`  -webkit-background-clip: ${spanStyle.webkitBackgroundClip}`, 'success');
+                        log(`  -webkit-text-fill-color: ${spanStyle.webkitTextFillColor}`, 'success');
+                        log('');
+                    }
+                }
+                
+                // 检查按钮
+                const challengeBtn = Array.from(document.querySelectorAll('button')).find(btn => 
+                    btn.textContent.includes('立即挑战')
+                );
+                if (challengeBtn) {
+                    const style = getComputedStyle(challengeBtn);
+                    log('"立即挑战"按钮:', 'info');
+                    log(`  background-image: ${style.backgroundImage}`, 'success');
+                    log(`  color: ${style.color}`, 'success');
+                    
+                    if (style.backgroundImage.includes('linear-gradient')) {
+                        log('  ✅ 正确: 有蓝绿渐变', 'success');
+                    } else {
+                        log('  ❌ 错误: 应该有linear-gradient渐变', 'error');
+                    }
+                    log('');
+                }
+                
+                // 诊断4: 宽度和padding检查
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                log('4️⃣  宽度和padding检查', 'warning');
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                log('');
+                
+                if (contentApp) {
+                    const rect = contentApp.getBoundingClientRect();
+                    const windowWidth = window.innerWidth;
+                    const paddingLeft = parseFloat(getComputedStyle(contentApp).paddingLeft);
+                    const paddingRight = parseFloat(getComputedStyle(contentApp).paddingRight);
+                    
+                    log('宽度信息:', 'info');
+                    log(`  浏览器窗口: ${windowWidth}px`, 'success');
+                    log(`  content-app宽度: ${rect.width.toFixed(2)}px`, 'success');
+                    log(`  左padding: ${paddingLeft.toFixed(2)}px (${(paddingLeft / windowWidth * 100).toFixed(2)}%)`, 'success');
+                    log(`  右padding: ${paddingRight.toFixed(2)}px (${(paddingRight / windowWidth * 100).toFixed(2)}%)`, 'success');
+                    log(`  左边距: ${rect.left.toFixed(2)}px`, 'success');
+                    log(`  右边距: ${(windowWidth - rect.right).toFixed(2)}px`, 'success');
+                    log('');
+                    
+                    if (Math.abs(paddingLeft / windowWidth * 100 - 2) < 0.1) {
+                        log('  ✅ 正确: padding约为2%', 'success');
+                    } else {
+                        log('  ❌ 错误: padding应该约为2%', 'error');
+                    }
+                    log('');
+                }
+                
+                // 诊断5: 最终评估
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                log('5️⃣  最终评估', 'warning');
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                log('');
+                
+                const bodyBg = getComputedStyle(document.body).backgroundColor;
+                const rootBg = getComputedStyle(document.querySelector('#root')).backgroundColor;
+                const contentBg = contentApp ? getComputedStyle(contentApp).backgroundColor : 'N/A';
+                
+                let issues = 0;
+                
+                if (bodyBg !== 'rgb(238, 238, 238)') {
+                    log('❌ body背景不是rgb(238, 238, 238)', 'error');
+                    issues++;
+                } else {
+                    log('✅ body背景正确', 'success');
+                }
+                
+                if (rootBg !== 'rgba(0, 0, 0, 0)' && rootBg !== 'transparent') {
+                    log('❌ #root背景不是透明', 'error');
+                    issues++;
+                } else {
+                    log('✅ #root背景正确（透明）', 'success');
+                }
+                
+                if (contentBg !== 'rgba(0, 0, 0, 0)' && contentBg !== 'transparent') {
+                    log('❌ content-app背景不是透明（会遮挡左右灰色）', 'error');
+                    issues++;
+                } else {
+                    log('✅ content-app背景正确（透明）', 'success');
+                }
+                
+                log('');
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                
+                if (issues === 0) {
+                    log('🎉 诊断完成: 所有检查通过！', 'success');
+                    log('8081与8080完全一致！', 'success');
+                } else {
+                    log(`⚠️  诊断完成: 发现 ${issues} 个问题`, 'error');
+                    log('请根据上述错误提示进行修复', 'warning');
+                }
+                
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                log('');
+                log('📊 诊断数据已保存到 window.diagnosisResults', 'info');
+                
+                // 保存诊断结果
+                window.diagnosisResults = {
+                    timestamp: new Date().toISOString(),
+                    port: port,
+                    body: { backgroundColor: bodyBg },
+                    root: { backgroundColor: rootBg },
+                    contentApp: contentApp ? {
+                        backgroundColor: contentBg,
+                        padding: getComputedStyle(contentApp).padding,
+                        width: getComputedStyle(contentApp).width,
+                    } : null,
+                    title: title ? {
+                        color: getComputedStyle(title).color,
+                    } : null,
+                    issues: issues,
+                };
+                
+                render();
+                
+                // 通知Agent
+                console.log('%c✅ 自动诊断完成', 'color: #4ec9b0; font-size: 16px; font-weight: bold;');
+                console.log('诊断结果:', window.diagnosisResults);
+                
+            }, 1000);
+        })();
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,186 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* 🔴 8080精确背景色：body灰色背景 */
+  body {
+    background-color: rgb(238, 238, 238) !important; /* #eeeeee */
+  }
+  
+  /* 🔴 确保#root也是灰色背景，不遮挡body */
+  #root {
+    background-color: transparent !important;
+  }
+  
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+  }
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+}
+
+/* ============================================================
+   8080 iView下拉菜单样式精确复刻
+   ============================================================ */
+
+/* Shadcn/UI DropdownMenuContent 覆盖为8080样式 */
+[data-radix-popper-content-wrapper] {
+  z-index: 1000 !important;
+}
+
+.dropdown-menu-8080 {
+  min-width: 180px !important;
+  margin-top: 8px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+  padding: 8px 0 !important;
+  background: white !important;
+  border: 1px solid #dcdee2 !important;
+}
+
+.dropdown-menu-8080 [role="menuitem"] {
+  padding: 12px 20px !important;
+  transition: all 0.2s ease !important;
+  font-size: 14px !important;
+  color: #515a6e !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.dropdown-menu-8080 [role="menuitem"]:hover {
+  background: #f3f3f3 !important;
+  color: #2d8cf0 !important;
+}
+
+.dropdown-menu-8080 [role="menuitem"] svg {
+  width: 16px !important;
+  height: 16px !important;
+  color: #808695 !important;
+  transition: color 0.2s ease !important;
+}
+
+.dropdown-menu-8080 [role="menuitem"]:hover svg {
+  color: #2d8cf0 !important;
+}
+
+/* 分隔线样式 */
+.dropdown-menu-8080 [role="separator"] {
+  margin: 4px 0 !important;
+  border-top: 1px solid #e8eaec !important;
+}
+
+/* ============================================================
+   学习路线卡片动画效果（与8080完全一致）
+   ============================================================ */
+
+/* 卡片hover时图标旋转360度 - 只旋转当前卡片的图标 */
+.stage-card-item:hover .stage-icon-box {
+  transform: rotate(360deg);
+}
+
+/* 卡片hover时显示晕染 - 只显示当前卡片的晕染 */
+.stage-card-item:hover .stage-glow-effect {
+  opacity: 0.6 !important;
+}
+
+/* 调试: 检查晕染元素是否存在 */
+.stage-glow-effect {
+  /* 默认状态可见，用于调试 - 生产环境注释掉 */
+  /* opacity: 0.3 !important; */
+  /* border: 2px solid red; */
+}
+
+/* ============================================================
+   子菜单触发按钮样式（状态、排名）
+   ============================================================ */
+
+/* 子菜单触发按钮样式（状态、排名） */
+.submenu-trigger-8080 {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 0 20px !important;
+  height: 60px !important;
+  font-size: 14px !important;
+  font-weight: normal !important;
+  border: none !important;
+  background: transparent !important;
+  cursor: pointer !important;
+  border-bottom: 2px solid transparent !important;
+  color: #495060 !important;
+  transition: color 0.2s ease, border-bottom 0.2s ease !important;
+  white-space: nowrap !important; /* 🔴 防止文字换行竖排 */
+  flex-shrink: 0 !important; /* 🔴 防止压缩 */
+}
+
+.submenu-trigger-8080:hover,
+.submenu-trigger-8080[data-state="open"] {
+  color: #2d8cf0 !important;
+  border-bottom-color: #2d8cf0 !important;
+}
+
+.submenu-trigger-8080 svg {
+  width: 16px !important;
+  height: 16px !important;
+}

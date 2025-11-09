@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>独立 Scratch 测试</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #000; color: #0f0; }
+        .result { padding: 15px; margin: 10px 0; border: 2px solid #0a0; background: #0a0a0a; }
+        .ok { border-color: #0f0; color: #0f0; }
+        .error { border-color: #f00; color: #f00; }
+    </style>
+</head>
+<body>
+    <h1>🧪 独立 Scratch 编辑器测试</h1>
+    <div id="result"></div>
+
+    <script>
+        const result = document.getElementById('result');
+        
+        async function runTest() {
+            let html = '<h2>测试开始...</h2>';
+            result.innerHTML = html;
+            
+            // 打开 Scratch 编辑器独立页面
+            const win = window.open('http://localhost:8601/', '_blank');
+            
+            html += '<div>✅ 已在新标签页打开 Scratch 编辑器</div>';
+            html += '<div>⏳ 等待 10 秒让编辑器加载...</div>';
+            result.innerHTML = html;
+            
+            await new Promise(r => setTimeout(r, 10000));
+            
+            html += '<div class="ok">✅ 10 秒已过，现在请：</div>';
+            html += '<div>1. 切换到 Scratch 编辑器标签页</div>';
+            html += '<div>2. 按 F12 打开控制台</div>';
+            html += '<div>3. 在控制台输入：</div>';
+            html += '<div style="background: #222; padding: 10px; margin: 10px 0; font-family: monospace;">window.scratchExportProjectData</div>';
+            html += '<div>4. 如果返回 <span class="ok">function</span>，说明功能正常 ✅</div>';
+            html += '<div>5. 如果返回 <span class="error">undefined</span>，说明 VM 未初始化 ❌</div>';
+            html += '<div style="margin-top: 20px;">然后在控制台输入：</div>';
+            html += '<div style="background: #222; padding: 10px; margin: 10px 0; font-family: monospace;">const data = window.scratchExportProjectData();<br>console.log(data);</div>';
+            html += '<div>如果能看到项目数据，说明导出功能完全正常！</div>';
+            
+            result.innerHTML = html;
+        }
+
+        window.addEventListener('load', () => {
+            setTimeout(runTest, 1000);
+        });
+    </script>
+</body>
+</html>
+

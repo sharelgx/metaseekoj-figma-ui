@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratch 保存问题诊断工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        .section h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .output {
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: "Courier New", monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .output pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .status.success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .status.error {
+            background: #f44336;
+            color: white;
+        }
+
+        .status.warning {
+            background: #ff9800;
+            color: white;
+        }
+
+        .instruction {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .instruction strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Scratch 保存问题诊断工具</h1>
+            <p>自动检测 VM 状态、保存流程和数据完整性</p>
+        </div>
+
+        <div class="content">
+            <div class="instruction">
+                <strong>📋 使用说明：</strong>
+                1. 确保已登录（显示"柳老师"头像）<br>
+                2. 在 Scratch 编辑器中添加一些积木<br>
+                3. 点击下方按钮进行诊断
+            </div>
+
+            <div class="section">
+                <h2>第1步：检查 VM 状态</h2>
+                <button class="button" onclick="checkVMStatus()">🔍 检查 VM</button>
+                <div id="vm-output" class="output" style="display:none;"></div>
+            </div>
+
+            <div class="section">
+                <h2>第2步：导出项目数据</h2>
+                <button class="button" onclick="exportProjectData()">📤 导出数据</button>
+                <div id="export-output" class="output" style="display:none;"></div>
+            </div>
+
+            <div class="section">
+                <h2>第3步：测试完整保存流程</h2>
+                <button class="button" onclick="testSaveFlow()">💾 测试保存</button>
+                <div id="save-output" class="output" style="display:none;"></div>
+            </div>
+
+            <div class="section">
+                <h2>第4步：查看我的项目列表</h2>
+                <button class="button" onclick="checkMyProjects()">📋 查看项目</button>
+                <div id="projects-output" class="output" style="display:none;"></div>
+            </div>
+
+            <div class="section">
+                <h2>一键诊断</h2>
+                <button class="button" onclick="runFullDiagnosis()" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">🚀 运行完整诊断</button>
+                <div id="full-output" class="output" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const EDITOR_URL = 'http://localhost:8601';
+        const API_BASE = 'http://localhost:8086/api';
+
+        function log(elementId, message, clear = false) {
+            const output = document.getElementById(elementId);
+            output.style.display = 'block';
+            if (clear) {
+                output.innerHTML = '';
+            }
+            output.innerHTML += message + '<br>';
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function checkVMStatus() {
+            const output = 'vm-output';
+            log(output, '=' .repeat(60), true);
+            log(output, '🔍 检查 iframe 中的 VM 状态');
+            log(output, '=' .repeat(60));
+
+            const iframe = document.querySelector('iframe[src*="8601"]');
+            if (!iframe) {
+                log(output, '<span class="status error">ERROR</span> 未找到 Scratch 编辑器 iframe');
+                return null;
+            }
+
+            log(output, '<span class="status success">OK</span> iframe 已找到');
+
+            try {
+                const iframeWindow = iframe.contentWindow;
+                const vm = iframeWindow.__scratchVM;
+
+                if (!vm) {
+                    log(output, '<span class="status error">ERROR</span> VM 实例不存在');
+                    return null;
+                }
+
+                log(output, '<span class="status success">OK</span> VM 实例存在');
+
+                const targets = vm.runtime.targets;
+                const totalBlocks = targets.reduce((sum, target) => 
+                    sum + Object.keys(target.blocks._blocks || {}).length, 0);
+
+                log(output, `📊 Targets 数量: ${targets.length}`);
+                log(output, `📊 总积木数量: ${totalBlocks}`);
+
+                if (totalBlocks === 0) {
+                    log(output, '<span class="status warning">WARNING</span> VM 中没有积木！');
+                    log(output, '💡 请先在编辑器中添加一些积木');
+                } else {
+                    log(output, `<span class="status success">OK</span> VM 中有 ${totalBlocks} 个积木`);
+                }
+
+                log(output, '=' .repeat(60));
+                return { vm, totalBlocks };
+            } catch (error) {
+                log(output, `<span class="status error">ERROR</span> 无法访问 VM: ${error.message}`);
+                log(output, '💡 可能是跨域问题，确保 iframe 在同一域名下');
+                return null;
+            }
+        }
+
+        async function exportProjectData() {
+            const output = 'export-output';
+            log(output, '=' .repeat(60), true);
+            log(output, '📤 导出项目数据');
+            log(output, '=' .repeat(60));
+
+            const vmStatus = await checkVMStatus();
+            if (!vmStatus) {
+                log(output, '<span class="status error">ERROR</span> VM 检查失败，无法导出');
+                return null;
+            }
+
+            const { vm } = vmStatus;
+
+            try {
+                const projectData = vm.toJSON();
+                const dataSize = JSON.stringify(projectData).length;
+
+                log(output, `<span class="status success">OK</span> 导出成功`);
+                log(output, `📦 数据大小: ${dataSize} 字节`);
+
+                if (projectData.targets) {
+                    const exportedBlocks = projectData.targets.reduce((sum, target) => 
+                        sum + Object.keys(target.blocks || {}).length, 0);
+                    log(output, `📊 导出数据中积木数量: ${exportedBlocks}`);
+
+                    if (exportedBlocks === 0) {
+                        log(output, '<span class="status error">ERROR</span> 导出的数据中没有积木！');
+                    } else {
+                        log(output, `<span class="status success">OK</span> 成功导出 ${exportedBlocks} 个积木`);
+                    }
+                }
+
+                log(output, '=' .repeat(60));
+                return projectData;
+            } catch (error) {
+                log(output, `<span class="status error">ERROR</span> 导出失败: ${error.message}`);
+                return null;
+            }
+        }
+
+        async function testSaveFlow() {
+            const output = 'save-output';
+            log(output, '=' .repeat(60), true);
+            log(output, '💾 测试保存流程');
+            log(output, '=' .repeat(60));
+
+            const projectData = await exportProjectData();
+            if (!projectData) {
+                log(output, '<span class="status error">ERROR</span> 无法导出项目数据');
+                return;
+            }
+
+            log(output, '📤 准备发送到后端...');
+            log(output, `📦 payload.data_json 类型: ${typeof projectData}`);
+
+            // 这里不实际发送，只是模拟
+            log(output, '<span class="status warning">INFO</span> 这是模拟测试，不会真正保存');
+            log(output, '💡 实际保存请使用编辑器的"文件 → 立即保存"功能');
+            log(output, '=' .repeat(60));
+        }
+
+        async function checkMyProjects() {
+            const output = 'projects-output';
+            log(output, '=' .repeat(60), true);
+            log(output, '📋 获取我的项目列表');
+            log(output, '=' .repeat(60));
+
+            try {
+                const response = await fetch(`${API_BASE}/scratch/mystuff/`, {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    log(output, `<span class="status error">ERROR</span> API 返回错误: ${response.status}`);
+                    return;
+                }
+
+                const data = await response.json();
+                log(output, `<span class="status success">OK</span> 成功获取项目列表`);
+                log(output, `📊 总项目数: ${data.results.length}`);
+                log(output, '');
+
+                data.results.slice(0, 5).forEach((project, index) => {
+                    const blocks = project.data_json && project.data_json.targets
+                        ? project.data_json.targets.reduce((sum, t) => 
+                            sum + Object.keys(t.blocks || {}).length, 0)
+                        : 0;
+
+                    log(output, `${index + 1}. ID ${project.id}: ${project.title}`);
+                    log(output, `   📊 积木数量: ${blocks}`);
+                    log(output, `   🕒 更新时间: ${new Date(project.updated_at).toLocaleString()}`);
+                    log(output, '');
+                });
+
+                log(output, '=' .repeat(60));
+            } catch (error) {
+                log(output, `<span class="status error">ERROR</span> 请求失败: ${error.message}`);
+                log(output, '💡 确保已登录');
+            }
+        }
+
+        async function runFullDiagnosis() {
+            const output = 'full-output';
+            log(output, '🚀 开始完整诊断...', true);
+            log(output, '');
+
+            // 1. 检查 VM
+            log(output, '【步骤 1/4】检查 VM 状态');
+            const vmStatus = await checkVMStatus();
+            await sleep(500);
+
+            // 2. 导出数据
+            log(output, '');
+            log(output, '【步骤 2/4】导出项目数据');
+            const projectData = await exportProjectData();
+            await sleep(500);
+
+            // 3. 检查项目列表
+            log(output, '');
+            log(output, '【步骤 3/4】检查项目列表');
+            await checkMyProjects();
+            await sleep(500);
+
+            // 4. 总结
+            log(output, '');
+            log(output, '=' .repeat(60));
+            log(output, '📊 诊断总结');
+            log(output, '=' .repeat(60));
+
+            if (vmStatus && vmStatus.totalBlocks > 0) {
+                log(output, '<span class="status success">✅</span> VM 状态正常，包含积木');
+            } else if (vmStatus && vmStatus.totalBlocks === 0) {
+                log(output, '<span class="status warning">⚠️</span> VM 中没有积木');
+                log(output, '   建议：在编辑器中添加一些积木再进行测试');
+            } else {
+                log(output, '<span class="status error">❌</span> 无法访问 VM');
+                log(output, '   可能原因：跨域限制或 iframe 未加载');
+            }
+
+            if (projectData) {
+                const blocks = projectData.targets.reduce((sum, t) => 
+                    sum + Object.keys(t.blocks || {}).length, 0);
+                if (blocks > 0) {
+                    log(output, '<span class="status success">✅</span> 数据导出正常');
+                } else {
+                    log(output, '<span class="status error">❌</span> 导出的数据中没有积木');
+                }
+            }
+
+            log(output, '=' .repeat(60));
+            log(output, '✅ 诊断完成！');
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>真实浏览器测试</title>
+    <style>
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            padding: 30px;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            color: #94a3b8;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .panel {
+            background: #334155;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        
+        h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #f1f5f9;
+            border-bottom: 2px solid #475569;
+            padding-bottom: 10px;
+        }
+        
+        .test-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #1e293b;
+            border-radius: 8px;
+            border-left: 4px solid #64748b;
+        }
+        
+        .test-item.running { border-left-color: #f59e0b; background: #422006; }
+        .test-item.success { border-left-color: #10b981; background: #022c22; }
+        .test-item.error { border-left-color: #ef4444; background: #2c0b0e; }
+        
+        .test-name {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+        
+        .test-result {
+            font-size: 13px;
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+        
+        button {
+            padding: 12px 24px;
+            margin: 5px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #059669;
+        }
+        
+        iframe {
+            width: 100%;
+            height: 800px;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        }
+        
+        .log-console {
+            background: #0f172a;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        
+        .log-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid #1e293b;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Scratch 编辑器真实浏览器测试</h1>
+        <p class="subtitle">直接在浏览器中检测 iframe 和用户状态</p>
+        
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="test-count">0</div>
+                <div class="stat-label">已完成测试</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" style="color: #10b981;" id="pass-count">0</div>
+                <div class="stat-label">通过</div>
+            </div>
+            <div class="stat-value" style="color: #ef4444;" id="fail-count">0</div>
+                <div class="stat-label">失败</div>
+            </div>
+        </div>
+        
+        <div class="grid">
+            <div>
+                <div class="panel">
+                    <h2>🎮 测试控制</h2>
+                    <button class="btn-primary" onclick="runAllTests()">🚀 运行完整测试</button>
+                    <button class="btn-success" onclick="openEditor()">📝 打开编辑器（新标签）</button>
+                    
+                    <h2 style="margin-top: 30px;">📋 测试结果</h2>
+                    <div id="test-results"></div>
+                </div>
+            </div>
+            
+            <div>
+                <div class="panel">
+                    <h2>🖥️ 编辑器预览（iframe）</h2>
+                    <iframe id="editor-frame" src="http://localhost:8081/classroom/scratch/editor/7"></iframe>
+                    
+                    <div class="log-console">
+                        <div style="color: #94a3b8; margin-bottom: 10px;">📜 控制台日志（实时）</div>
+                        <div id="console-log"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let testCount = 0;
+        let passCount = 0;
+        let failCount = 0;
+        
+        function updateStats() {
+            document.getElementById('test-count').textContent = testCount;
+            document.getElementById('pass-count').textContent = passCount;
+            document.getElementById('fail-count').textContent = failCount;
+        }
+        
+        function logTest(name, result, details = '') {
+            testCount++;
+            if (result) passCount++;
+            else failCount++;
+            updateStats();
+            
+            const div = document.createElement('div');
+            div.className = `test-item ${result ? 'success' : 'error'}`;
+            div.innerHTML = `
+                <div class="test-name">${result ? '✅' : '❌'} ${name}</div>
+                <div class="test-result">${details}</div>
+            `;
+            document.getElementById('test-results').insertBefore(div, document.getElementById('test-results').firstChild);
+        }
+        
+        function logConsole(msg) {
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            const console = document.getElementById('console-log');
+            console.insertBefore(div, console.firstChild);
+            
+            if (console.children.length > 50) {
+                console.removeChild(console.lastChild);
+            }
+        }
+        
+        async function runAllTests() {
+            document.getElementById('test-results').innerHTML = '';
+            testCount = 0;
+            passCount = 0;
+            failCount = 0;
+            updateStats();
+            
+            logConsole('🚀 开始测试...');
+            
+            // 测试1: 检查登录状态
+            try {
+                const res = await fetch('http://localhost:8086/api/profile/', {credentials: 'include'});
+                const data = await res.json();
+                
+                if (data.error === null && data.data) {
+                    const username = data.data.real_name || data.data.user?.username;
+                    logTest('检查登录状态', true, `用户: ${username}`);
+                    logConsole(`✅ 用户已登录: ${username}`);
+                } else {
+                    logTest('检查登录状态', false, '用户未登录');
+                    logConsole('❌ 用户未登录');
+                }
+            } catch (e) {
+                logTest('检查登录状态', false, e.message);
+                logConsole(`❌ 登录检查失败: ${e.message}`);
+            }
+            
+            // 测试2: 检查项目7数据
+            try {
+                const res = await fetch('http://localhost:8086/api/scratch/projects/7/', {credentials: 'include'});
+                const project = await res.json();
+                
+                const hasData = project.data_json && typeof project.data_json === 'object';
+                const hasTargets = hasData && project.data_json.targets;
+                const hasThumbnail = project.cover_url && project.cover_url.length > 0;
+                
+                logTest('检查项目7数据', hasData && hasTargets, 
+                    `data_json: ${hasData ? '对象✓' : '错误✗'}, targets: ${hasTargets ? '存在✓' : '不存在✗'}`);
+                    
+                logTest('检查项目7缩略图', hasThumbnail,
+                    `cover_url长度: ${project.cover_url ? project.cover_url.length : 0} 字节`);
+                    
+                logConsole(`项目7 - data_json类型: ${typeof project.data_json}`);
+                logConsole(`项目7 - 有targets: ${hasTargets ? '是' : '否'}`);
+                logConsole(`项目7 - 缩略图: ${hasThumbnail ? '有' : '无'}`);
+            } catch (e) {
+                logTest('检查项目7', false, e.message);
+                logConsole(`❌ 项目7检查失败: ${e.message}`);
+            }
+            
+            // 测试3: 检查 iframe 加载
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            
+            try {
+                const iframe = document.getElementById('editor-frame');
+                if (iframe && iframe.contentWindow) {
+                    logTest('iframe 加载', true, 'iframe 存在且可访问');
+                    logConsole('✅ iframe 已加载');
+                    
+                    // 尝试向 iframe 发送消息
+                    const userRes = await fetch('http://localhost:8086/api/profile/', {credentials: 'include'});
+                    const userData = await userRes.json();
+                    
+                    if (userData.error === null && userData.data) {
+                        const username = userData.data.real_name || userData.data.user?.username;
+                        const avatar = userData.data.avatar;
+                        
+                        iframe.contentWindow.postMessage({
+                            type: 'USER_INFO_UPDATE',
+                            data: {
+                                isLoggedIn: true,
+                                username: username,
+                                avatarUrl: avatar ? 'http://localhost:8086' + avatar : null
+                            }
+                        }, '*');
+                        
+                        logTest('向 iframe 发送用户信息', true, `已发送: ${username}`);
+                        logConsole(`📨 已向 iframe 发送用户信息: ${username}`);
+                        logConsole('⏰ 等待 2 秒后检查 iframe 是否显示用户名...');
+                        
+                        // 等待 2 秒后提示用户检查
+                        setTimeout(() => {
+                            logConsole('');
+                            logConsole('🔍 请查看上方 iframe，右上角是否显示"柳老师"？');
+                            logConsole('');
+                            logConsole('如果显示"登录"按钮而不是"柳老师"：');
+                            logConsole('  1. 说明 postMessage 未被 iframe 接收');
+                            logConsole('  2. 或者 iframe 内部的渲染逻辑有问题');
+                            logConsole('');
+                            logConsole('📝 请在 iframe 上右键 → 检查，查看 iframe 的控制台日志');
+                        }, 2000);
+                    }
+                } else {
+                    logTest('iframe 加载', false, 'iframe 不存在或无法访问');
+                    logConsole('❌ iframe 未找到');
+                }
+            } catch (e) {
+                logTest('iframe 检查', false, e.message);
+                logConsole(`❌ iframe检查失败: ${e.message}`);
+            }
+            
+            logConsole('');
+            logConsole('='.repeat(50));
+            logConsole('✅ 自动化测试完成！');
+            logConsole('');
+            logConsole('👀 现在请用眼睛查看上方的 iframe：');
+            logConsole('  1. 右上角是否显示"柳老师"？');
+            logConsole('  2. 是否加载了项目内容（积木块、角色）？');
+            logConsole('  3. 如果都没有，请在 iframe 上右键 → 检查元素');
+            logConsole('  4. 切换到 Console 标签，查看 iframe 内部的日志');
+            logConsole('='.repeat(50));
+        }
+        
+        function openEditor() {
+            window.open('http://localhost:8081/classroom/scratch/editor/7', '_blank');
+        }
+        
+        // 监听来自 iframe 的消息
+        window.addEventListener('message', (event) => {
+            if (event.origin.includes('localhost')) {
+                logConsole(`📬 收到 iframe 消息: ${event.data.type || JSON.stringify(event.data)}`);
+                
+                if (event.data.type === 'USER_INFO_UPDATE_ACK') {
+                    logConsole(`✅ iframe 已确认收到用户信息`);
+                }
+            }
+        });
+        
+        // 页面加载时自动运行测试
+        window.addEventListener('load', () => {
+            logConsole('📌 页面已加载，等待 iframe 完全加载...');
+            
+            // 等待 iframe 加载
+            const iframe = document.getElementById('editor-frame');
+            iframe.addEventListener('load', () => {
+                logConsole('✅ iframe 已加载完成');
+                logConsole('🔄 3秒后自动开始测试...');
+                
+                setTimeout(() => {
+                    runAllTests();
+                }, 3000);
+            });
+        });
+    </script>
+</body>
+</html>
+

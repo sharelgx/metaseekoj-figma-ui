@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>PostMessage 最终测试</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .controls {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #0a0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #0f0;
+        }
+        #logs {
+            background: #000;
+            border: 1px solid #0a0;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #0a0;
+            padding-left: 10px;
+        }
+        .log-send {
+            color: #ff0;
+        }
+        .log-receive {
+            color: #0ff;
+        }
+        .log-error {
+            color: #f00;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #0a0;
+            border-radius: 8px;
+        }
+        .status {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status.online {
+            background: #0f0;
+        }
+        .status.offline {
+            background: #f00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 PostMessage 最终测试</h1>
+        
+        <div class="controls">
+            <h3><span class="status" id="status"></span>连接状态</h3>
+            <button onclick="login()">🔐 模拟登录</button>
+            <button onclick="logout()">🚪 模拟退出</button>
+            <button onclick="sendCustomMessage()">📤 发送自定义消息</button>
+            <button onclick="checkIframe()">🔍 检查 iframe</button>
+            <button onclick="clearLogs()">🗑️ 清空日志</button>
+        </div>
+
+        <div id="logs"></div>
+
+        <h3 style="margin-top: 30px;">Scratch 编辑器</h3>
+        <iframe id="scratchIframe" src="http://localhost:8601/"></iframe>
+    </div>
+
+    <script>
+        const logsDiv = document.getElementById('logs');
+        const statusDot = document.getElementById('status');
+        let iframe = null;
+        let messageCount = 0;
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${timestamp}] ${message}`;
+            logsDiv.appendChild(entry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+            console.log(`[${type}] ${message}`);
+        }
+
+        function clearLogs() {
+            logsDiv.innerHTML = '';
+            log('日志已清空', 'info');
+        }
+
+        function checkIframe() {
+            iframe = document.getElementById('scratchIframe');
+            if (iframe) {
+                log('✅ iframe 元素存在', 'info');
+                log(`iframe.src: ${iframe.src}`, 'info');
+                
+                if (iframe.contentWindow) {
+                    log('✅ iframe.contentWindow 存在', 'info');
+                    statusDot.className = 'status online';
+                } else {
+                    log('❌ iframe.contentWindow 不存在', 'error');
+                    statusDot.className = 'status offline';
+                }
+            } else {
+                log('❌ iframe 元素不存在', 'error');
+                statusDot.className = 'status offline';
+            }
+        }
+
+        function login() {
+            iframe = document.getElementById('scratchIframe');
+            if (!iframe || !iframe.contentWindow) {
+                log('❌ iframe 未准备好', 'error');
+                return;
+            }
+
+            const userInfo = {
+                isLoggedIn: true,
+                username: '柳老师',
+                avatarUrl: null
+            };
+
+            log('📤 发送 USER_INFO_UPDATE 消息', 'send');
+            log(`数据: ${JSON.stringify(userInfo)}`, 'send');
+
+            iframe.contentWindow.postMessage({
+                type: 'USER_INFO_UPDATE',
+                data: userInfo
+            }, '*');
+
+            log('✅ postMessage 已发送', 'send');
+            messageCount++;
+        }
+
+        function logout() {
+            iframe = document.getElementById('scratchIframe');
+            if (!iframe || !iframe.contentWindow) {
+                log('❌ iframe 未准备好', 'error');
+                return;
+            }
+
+            const userInfo = {
+                isLoggedIn: false,
+                username: null,
+                avatarUrl: null
+            };
+
+            log('📤 发送 USER_INFO_UPDATE 消息 (退出登录)', 'send');
+            log(`数据: ${JSON.stringify(userInfo)}`, 'send');
+
+            iframe.contentWindow.postMessage({
+                type: 'USER_INFO_UPDATE',
+                data: userInfo
+            }, '*');
+
+            log('✅ postMessage 已发送', 'send');
+            messageCount++;
+        }
+
+        function sendCustomMessage() {
+            iframe = document.getElementById('scratchIframe');
+            if (!iframe || !iframe.contentWindow) {
+                log('❌ iframe 未准备好', 'error');
+                return;
+            }
+
+            const customData = {
+                type: 'CUSTOM_TEST',
+                data: {
+                    message: 'Hello from parent!',
+                    timestamp: new Date().toISOString()
+                }
+            };
+
+            log('📤 发送自定义测试消息', 'send');
+            log(`数据: ${JSON.stringify(customData)}`, 'send');
+
+            iframe.contentWindow.postMessage(customData, '*');
+
+            log('✅ postMessage 已发送', 'send');
+            messageCount++;
+        }
+
+        // 监听来自 iframe 的消息
+        window.addEventListener('message', (event) => {
+            log(`📬 收到消息 [来自: ${event.origin}]`, 'receive');
+            log(`类型: ${event.data?.type || '未知'}`, 'receive');
+            log(`数据: ${JSON.stringify(event.data).substring(0, 200)}`, 'receive');
+        });
+
+        // 页面加载完成后初始化
+        window.addEventListener('load', () => {
+            log('🚀 测试页面已加载', 'info');
+            
+            setTimeout(() => {
+                checkIframe();
+                log('ℹ️ 等待 5 秒后 iframe 应该已经完全加载...', 'info');
+            }, 5000);
+
+            // 定期检查 iframe 状态
+            setInterval(() => {
+                const iframe = document.getElementById('scratchIframe');
+                if (iframe && iframe.contentWindow) {
+                    statusDot.className = 'status online';
+                } else {
+                    statusDot.className = 'status offline';
+                }
+            }, 1000);
+        });
+
+        // 监听 iframe 加载完成
+        document.getElementById('scratchIframe').addEventListener('load', () => {
+            log('✅ iframe 内容已加载完成', 'info');
+            checkIframe();
+        });
+    </script>
+</body>
+</html>
+

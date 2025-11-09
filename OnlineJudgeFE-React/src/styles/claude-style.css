@@ -1,0 +1,618 @@
+/**
+ * Claude风格的对话界面样式
+ * 
+ * 参考Claude的专业设计
+ */
+
+/* ======================================
+   全局样式
+   ====================================== */
+
+.claude-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+}
+
+/* ======================================
+   顶部导航栏
+   ====================================== */
+
+.claude-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+  min-height: 56px;
+}
+
+.claude-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.claude-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.claude-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ======================================
+   主内容区域 - 分栏布局
+   ====================================== */
+
+.claude-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 左侧对话区（40%） */
+.claude-chat-panel {
+  width: 40%;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+}
+
+/* 右侧预览区（60%） */
+.claude-preview-panel {
+  width: 60%;
+  display: flex;
+  flex-direction: column;
+  background: #f9fafb;
+}
+
+/* ======================================
+   对话消息样式
+   ====================================== */
+
+.claude-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 16px;
+}
+
+.claude-message {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 用户消息 */
+.claude-message.user {
+  align-items: flex-end;
+}
+
+.claude-message.user .message-bubble {
+  background: #000000;
+  color: #ffffff;
+  border-radius: 18px 18px 4px 18px;
+  padding: 12px 16px;
+  max-width: 85%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* AI消息 */
+.claude-message.assistant {
+  align-items: flex-start;
+}
+
+.claude-message.assistant .message-bubble {
+  background: #f3f4f6;
+  color: #111827;
+  border-radius: 18px 18px 18px 4px;
+  padding: 12px 16px;
+  max-width: 85%;
+  line-height: 1.6;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* 系统消息 */
+.claude-message.system {
+  align-items: center;
+}
+
+.claude-message.system .message-bubble {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* 消息文本 */
+.message-text {
+  font-size: 15px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 消息时间 */
+.message-time {
+  font-size: 11px;
+  margin-top: 4px;
+  opacity: 0.6;
+}
+
+/* ======================================
+   文档卡片预览
+   ====================================== */
+
+.claude-document-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px 0;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.claude-document-card:hover {
+  border-color: #3DBAFB;
+  box-shadow: 0 4px 12px rgba(61, 186, 251, 0.1);
+  transform: translateY(-2px);
+}
+
+.claude-document-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.claude-document-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.claude-document-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.claude-document-icon {
+  width: 16px;
+  height: 16px;
+  color: #9ca3af;
+}
+
+/* ======================================
+   输入区域
+   ====================================== */
+
+.claude-input-area {
+  padding: 16px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.claude-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 8px;
+  transition: all 0.2s;
+}
+
+.claude-input-wrapper:focus-within {
+  border-color: #3DBAFB;
+  box-shadow: 0 0 0 3px rgba(61, 186, 251, 0.1);
+}
+
+.claude-textarea {
+  flex: 1;
+  min-height: 40px;
+  max-height: 200px;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #111827;
+  font-family: inherit;
+}
+
+.claude-textarea::placeholder {
+  color: #9ca3af;
+}
+
+.claude-send-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #3DBAFB;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.claude-send-button:hover:not(:disabled) {
+  background: #2DA8E8;
+  transform: scale(1.05);
+}
+
+.claude-send-button:disabled {
+  background: #e5e7eb;
+  cursor: not-allowed;
+}
+
+.claude-send-button svg {
+  width: 20px;
+  height: 20px;
+  color: #ffffff;
+}
+
+/* ======================================
+   快捷指令按钮
+   ====================================== */
+
+.claude-quick-commands {
+  padding: 12px 16px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.claude-quick-label {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.claude-command-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.claude-command-button {
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #374151;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.claude-command-button:hover:not(:disabled) {
+  border-color: #3DBAFB;
+  background: #f0f9ff;
+  color: #1e40af;
+}
+
+.claude-command-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.claude-command-button svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* ======================================
+   预览区域
+   ====================================== */
+
+.claude-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.claude-preview-title {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.claude-preview-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.claude-preview-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* ======================================
+   加载状态
+   ====================================== */
+
+.claude-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f3f4f6;
+  border-radius: 18px;
+  color: #6b7280;
+  font-size: 14px;
+  max-width: fit-content;
+}
+
+.claude-loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e5e7eb;
+  border-top-color: #3DBAFB;
+  border-radius: 50%;
+  animation: claude-spin 0.8s linear infinite;
+}
+
+@keyframes claude-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ======================================
+   进度条
+   ====================================== */
+
+.claude-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+
+.claude-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3DBAFB 0%, #8ED1A9 100%);
+  transition: width 0.3s ease;
+  border-radius: 2px;
+}
+
+.claude-progress-text {
+  font-size: 13px;
+  color: #6b7280;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* ======================================
+   滚动条样式
+   ====================================== */
+
+.claude-messages::-webkit-scrollbar,
+.claude-preview-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.claude-messages::-webkit-scrollbar-track,
+.claude-preview-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.claude-messages::-webkit-scrollbar-thumb,
+.claude-preview-content::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.claude-messages::-webkit-scrollbar-thumb:hover,
+.claude-preview-content::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* ======================================
+   响应式设计
+   ====================================== */
+
+@media (max-width: 1024px) {
+  .claude-chat-panel {
+    width: 45%;
+  }
+  
+  .claude-preview-panel {
+    width: 55%;
+  }
+}
+
+@media (max-width: 768px) {
+  .claude-main {
+    flex-direction: column;
+  }
+  
+  .claude-chat-panel,
+  .claude-preview-panel {
+    width: 100%;
+  }
+  
+  .claude-preview-panel {
+    border-top: 1px solid #e5e7eb;
+    border-right: none;
+  }
+  
+  .claude-command-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ======================================
+   动画效果
+   ====================================== */
+
+@keyframes claude-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.claude-message {
+  animation: claude-fade-in 0.3s ease;
+}
+
+/* ======================================
+   按钮样式
+   ====================================== */
+
+.claude-button {
+  padding: 8px 16px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.claude-button:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.claude-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.claude-button-primary {
+  background: #3DBAFB;
+  border-color: #3DBAFB;
+  color: #ffffff;
+}
+
+.claude-button-primary:hover:not(:disabled) {
+  background: #2DA8E8;
+  border-color: #2DA8E8;
+}
+
+/* ======================================
+   徽章样式
+   ====================================== */
+
+.claude-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.claude-badge-info {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.claude-badge-success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.claude-badge-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.claude-badge-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ======================================
+   分隔线
+   ====================================== */
+
+.claude-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 16px 0;
+}
+
+/* ======================================
+   空状态
+   ====================================== */
+
+.claude-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.claude-empty-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 16px;
+  color: #d1d5db;
+}
+
+.claude-empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.claude-empty-description {
+  font-size: 14px;
+  color: #6b7280;
+}
+

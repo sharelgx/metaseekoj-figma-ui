@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>React前端调试</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #d4d4d4; }
+        .section { margin: 20px 0; padding: 15px; background: #252526; border-radius: 5px; }
+        .success { color: #4ec9b0; }
+        .error { color: #f48771; }
+        .warning { color: #dcdcaa; }
+        h2 { color: #569cd6; }
+        pre { background: #1e1e1e; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 React前端调试页面</h1>
+    
+    <div class="section">
+        <h2>1. 检查类型文件</h2>
+        <pre id="types-check">检查中...</pre>
+    </div>
+    
+    <div class="section">
+        <h2>2. 检查组件文件</h2>
+        <pre id="component-check">检查中...</pre>
+    </div>
+    
+    <div class="section">
+        <h2>3. 模块导入测试</h2>
+        <pre id="import-test">检查中...</pre>
+    </div>
+    
+    <div class="section">
+        <h2>4. Vite服务状态</h2>
+        <pre id="vite-check">检查中...</pre>
+    </div>
+
+    <script type="module">
+        // 1. 检查类型文件
+        try {
+            const typesResponse = await fetch('/src/types/classroom.ts');
+            const typesContent = await typesResponse.text();
+            document.getElementById('types-check').innerHTML = 
+                `<span class="success">✅ 文件存在</span>\n` +
+                `大小: ${typesContent.length} 字节\n` +
+                `Course导出: ${typesContent.includes('export interface Course') ? '✅ 找到' : '❌ 未找到'}\n` +
+                `内容预览:\n${typesContent.substring(0, 300)}...`;
+        } catch (e) {
+            document.getElementById('types-check').innerHTML = 
+                `<span class="error">❌ 错误: ${e.message}</span>`;
+        }
+
+        // 2. 检查组件文件
+        try {
+            const componentResponse = await fetch('/src/pages/classroom/teacher/CourseList.tsx');
+            const componentContent = await componentResponse.text();
+            document.getElementById('component-check').innerHTML = 
+                `<span class="success">✅ 文件存在</span>\n` +
+                `大小: ${componentContent.length} 字节\n` +
+                `Course导入: ${componentContent.includes("import { Course }") ? '✅ 找到' : '❌ 未找到'}\n` +
+                `导入路径: ${componentContent.match(/import.*Course.*from.*/) ? componentContent.match(/import.*Course.*from.*/)[0] : '未找到'}`;
+        } catch (e) {
+            document.getElementById('component-check').innerHTML = 
+                `<span class="error">❌ 错误: ${e.message}</span>`;
+        }
+
+        // 3. 尝试实际导入
+        try {
+            const module = await import('/src/types/classroom.ts');
+            const exports = Object.keys(module);
+            document.getElementById('import-test').innerHTML = 
+                `<span class="success">✅ 模块加载成功</span>\n` +
+                `导出列表: ${exports.join(', ')}\n` +
+                `Course: ${module.Course ? '✅ 存在' : '❌ 不存在'}\n` +
+                `实际导出内容: ${JSON.stringify(exports, null, 2)}`;
+        } catch (e) {
+            document.getElementById('import-test').innerHTML = 
+                `<span class="error">❌ 导入失败</span>\n` +
+                `错误: ${e.message}\n` +
+                `堆栈: ${e.stack}`;
+        }
+
+        // 4. Vite服务检查
+        try {
+            const viteResponse = await fetch('/@vite/client');
+            document.getElementById('vite-check').innerHTML = 
+                `<span class="success">✅ Vite客户端正常</span>\n` +
+                `状态: ${viteResponse.status}`;
+        } catch (e) {
+            document.getElementById('vite-check').innerHTML = 
+                `<span class="error">❌ Vite客户端错误: ${e.message}</span>`;
+        }
+    </script>
+</body>
+</html>

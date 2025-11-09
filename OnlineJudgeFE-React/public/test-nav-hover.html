@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试导航栏Hover效果</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .nav-demo {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        
+        .nav-item {
+            padding: 0 20px;
+            height: 60px;
+            font-size: 14px;
+            font-weight: normal;
+            border: none;
+            border-bottom: 2px solid transparent;
+            background: transparent;
+            cursor: pointer;
+            color: #495060;
+            transition: color 0.2s ease, border-bottom 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .nav-item:hover,
+        .nav-item.active {
+            border-bottom: 2px solid #2d8cf0;
+            color: #2d8cf0;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f7ff;
+            border-left: 4px solid #2d8cf0;
+            border-radius: 4px;
+        }
+        
+        .code-block {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f8f8;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎯 导航栏Hover效果测试</h1>
+        
+        <div class="nav-demo">
+            <button class="nav-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                </svg>
+                首页
+            </button>
+            <button class="nav-item active">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+                题库（当前页）
+            </button>
+            <button class="nav-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                选择题
+            </button>
+            <button class="nav-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9h15"/>
+                    <path d="M6 15h15"/>
+                    <path d="M6 9l-4-4"/>
+                    <path d="M6 15l-4 4"/>
+                </svg>
+                状态
+            </button>
+        </div>
+        
+        <div class="status">
+            <strong>✅ 测试说明：</strong><br>
+            鼠标移到任意导航项上，应该看到：
+            <ol style="margin-top: 10px; margin-left: 20px;">
+                <li>文字颜色变成蓝色 (#2d8cf0)</li>
+                <li>底部出现2px蓝色下划线</li>
+                <li>过渡动画0.2s</li>
+            </ol>
+        </div>
+        
+        <div class="code-block">
+<strong>CSS代码：</strong>
+<pre>
+.nav-item:hover,
+.nav-item.active {
+    border-bottom: 2px solid #2d8cf0;
+    color: #2d8cf0;
+}
+</pre>
+        </div>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+            <strong>⚠️ 如果看到这个效果正常，但React应用中看不到：</strong><br>
+            <ol style="margin-top: 10px; margin-left: 20px;">
+                <li>按 <strong>Ctrl + Shift + R</strong> 强制刷新浏览器</li>
+                <li>或打开开发者工具（F12），在Network标签中勾选 "Disable cache"</li>
+                <li>清空浏览器缓存</li>
+            </ol>
+        </div>
+    </div>
+    
+    <script>
+        console.log('导航栏测试页面已加载');
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                console.log('鼠标进入:', item.textContent.trim());
+            });
+        });
+    </script>
+</body>
+</html>
+

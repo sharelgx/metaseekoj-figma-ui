@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratch 登录调试工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .card h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .log-entry {
+            margin: 5px 0;
+            padding: 3px 0;
+        }
+
+        .log-success {
+            color: #4ade80;
+        }
+
+        .log-error {
+            color: #f87171;
+        }
+
+        .log-info {
+            color: #60a5fa;
+        }
+
+        .log-warning {
+            color: #fbbf24;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .credentials {
+            background: #fff3cd;
+            border: 2px dashed #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .credentials code {
+            background: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #d63384;
+            font-weight: bold;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .status-item {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .status-ok {
+            background: #d1fae5;
+            border: 2px solid #10b981;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            border: 2px solid #ef4444;
+        }
+
+        .status-item h3 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .status-item .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Scratch 登录调试工具</h1>
+            <p>实时监控登录状态和用户信息</p>
+        </div>
+
+        <div class="card">
+            <h2>🎮 快速操作</h2>
+            <button class="btn btn-primary" onclick="openEditor()">打开 Scratch 编辑器</button>
+            <button class="btn btn-success" onclick="testLogin()">测试登录流程</button>
+            <button class="btn btn-danger" onclick="testLogout()">测试退出登录</button>
+            <button class="btn btn-primary" onclick="clearLog()">清空日志</button>
+
+            <div class="credentials">
+                <h4>🔐 测试账号</h4>
+                <p>
+                    用户名: <code>root</code> | 
+                    密码: <code>lgx780504</code>
+                </p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📊 当前状态</h2>
+            <div class="status-grid">
+                <div class="status-item" id="status-logged-in">
+                    <h3>登录状态</h3>
+                    <div class="value" id="login-status">检查中...</div>
+                </div>
+                <div class="status-item" id="status-username">
+                    <h3>当前用户</h3>
+                    <div class="value" id="username-value">检查中...</div>
+                </div>
+                <div class="status-item" id="status-cookie">
+                    <h3>Session Cookie</h3>
+                    <div class="value" id="cookie-status">检查中...</div>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <strong>💡 提示：</strong> 此页面每 2 秒自动刷新状态
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📝 调试日志</h2>
+            <div class="log" id="log"></div>
+        </div>
+    </div>
+
+    <script>
+        // 日志功能
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${time}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            addLog('日志已清空', 'info');
+        }
+
+        // 打开编辑器
+        function openEditor() {
+            window.open('http://localhost:8081/classroom/scratch/editor', '_blank');
+            addLog('已打开 Scratch 编辑器', 'info');
+        }
+
+        // 测试登录
+        async function testLogin() {
+            addLog('=== 开始测试登录流程 ===', 'info');
+            
+            try {
+                addLog('1️⃣ 调用登录 API...', 'info');
+                const response = await fetch('http://localhost:8086/api/login/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        username: 'root',
+                        password: 'lgx780504'
+                    })
+                });
+                
+                const data = await response.json();
+                addLog('登录响应: ' + JSON.stringify(data), 'info');
+                
+                if (data.error === null) {
+                    addLog('✅ 登录成功！', 'success');
+                    setTimeout(checkStatus, 1000);
+                } else {
+                    addLog('❌ 登录失败: ' + data.data, 'error');
+                }
+            } catch (error) {
+                addLog('❌ 登录请求失败: ' + error.message, 'error');
+            }
+        }
+
+        // 测试退出登录
+        async function testLogout() {
+            addLog('=== 测试退出登录 ===', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:8086/api/logout/', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                addLog('退出登录响应: ' + JSON.stringify(data), 'info');
+                addLog('✅ 已退出登录', 'success');
+                setTimeout(checkStatus, 1000);
+            } catch (error) {
+                addLog('❌ 退出登录失败: ' + error.message, 'error');
+            }
+        }
+
+        // 检查状态
+        async function checkStatus() {
+            // 检查 Cookie
+            const cookies = document.cookie;
+            const hasSession = cookies.includes('sessionid');
+            
+            const cookieElement = document.getElementById('cookie-status');
+            const cookieCard = document.getElementById('status-cookie');
+            if (hasSession) {
+                cookieElement.textContent = '✅ 已设置';
+                cookieCard.className = 'status-item status-ok';
+            } else {
+                cookieElement.textContent = '❌ 未设置';
+                cookieCard.className = 'status-item status-error';
+            }
+
+            // 检查用户信息
+            try {
+                const response = await fetch('http://localhost:8086/api/profile/', {
+                    credentials: 'include'
+                });
+                const result = await response.json();
+                
+                const loginElement = document.getElementById('login-status');
+                const usernameElement = document.getElementById('username-value');
+                const loginCard = document.getElementById('status-logged-in');
+                const usernameCard = document.getElementById('status-username');
+                
+                if (result.error === null && result.data) {
+                    const username = result.data.real_name || result.data.user?.username || '未知';
+                    
+                    loginElement.textContent = '✅ 已登录';
+                    usernameElement.textContent = username;
+                    loginCard.className = 'status-item status-ok';
+                    usernameCard.className = 'status-item status-ok';
+                } else {
+                    loginElement.textContent = '❌ 未登录';
+                    usernameElement.textContent = '-';
+                    loginCard.className = 'status-item status-error';
+                    usernameCard.className = 'status-item status-error';
+                }
+            } catch (error) {
+                addLog('检查用户信息失败: ' + error.message, 'error');
+            }
+        }
+
+        // 页面加载时检查
+        window.addEventListener('load', () => {
+            addLog('🚀 调试工具已启动', 'success');
+            checkStatus();
+        });
+
+        // 每 2 秒自动检查状态
+        setInterval(checkStatus, 2000);
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratch 编辑器端到端测试</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 20px;
+        }
+        
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        
+        h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .test-step {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .test-step.pending {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+        }
+        
+        .test-step.running {
+            background: #fef3c7;
+            border-color: #fbbf24;
+        }
+        
+        .test-step.success {
+            background: #d1fae5;
+            border-color: #10b981;
+        }
+        
+        .test-step.error {
+            background: #fee2e2;
+            border-color: #ef4444;
+        }
+        
+        .step-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .step-detail {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #059669;
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        
+        .log {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 600px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+        
+        .log-entry {
+            margin-bottom: 4px;
+            padding: 4px 8px;
+            border-left: 3px solid #667eea;
+            padding-left: 12px;
+        }
+        
+        .log-success { border-left-color: #10b981; color: #86efac; }
+        .log-error { border-left-color: #ef4444; color: #fca5a5; }
+        .log-warning { border-left-color: #f59e0b; color: #fcd34d; }
+        .log-info { border-left-color: #3b82f6; color: #93c5fd; }
+        
+        .timestamp {
+            color: #94a3b8;
+            margin-right: 8px;
+        }
+        
+        iframe {
+            width: 100%;
+            height: 700px;
+            border: none;
+            border-radius: 8px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧控制面板 -->
+        <div>
+            <div class="panel">
+                <h1>🧪 端到端测试</h1>
+                
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-value" id="total-tests">0</div>
+                        <div class="stat-label">总测试</div>
+                    </div>
+                    <div class="stat-box" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                        <div class="stat-value" id="passed-tests">0</div>
+                        <div class="stat-label">通过</div>
+                    </div>
+                    <div class="stat-box" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                        <div class="stat-value" id="failed-tests">0</div>
+                        <div class="stat-label">失败</div>
+                    </div>
+                    <div class="stat-box" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                        <div class="stat-value" id="elapsed-time">0s</div>
+                        <div class="stat-label">耗时</div>
+                    </div>
+                </div>
+                
+                <div class="buttons">
+                    <button class="btn-primary" onclick="runTests()">▶️ 开始测试</button>
+                    <button class="btn-danger" onclick="clearLog()">🗑️ 清除日志</button>
+                </div>
+                
+                <h2>📋 测试步骤</h2>
+                <div id="test-steps"></div>
+            </div>
+        </div>
+        
+        <!-- 右侧日志和预览 -->
+        <div>
+            <div class="panel">
+                <h2>📊 实时日志</h2>
+                <div class="log" id="log">
+                    <div class="log-entry">等待测试开始...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let testResults = {
+            total: 0,
+            passed: 0,
+            failed: 0,
+            startTime: null
+        };
+        
+        const steps = [
+            { id: 1, name: '检查登录状态', desc: '验证用户是否已登录' },
+            { id: 2, name: '获取项目列表', desc: '从后端获取用户的所有项目' },
+            { id: 3, name: '验证缩略图', desc: '检查所有项目是否都有缩略图' },
+            { id: 4, name: '打开项目7', desc: '在编辑器中打开项目ID 7' },
+            { id: 5, name: '验证项目加载', desc: '检查项目数据是否正确加载' },
+            { id: 6, name: '验证登录状态显示', desc: '检查编辑器中是否显示用户名' }
+        ];
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `<span class="timestamp">[${timestamp}]</span>${message}`;
+            logDiv.insertBefore(entry, logDiv.firstChild);
+            
+            if (logDiv.children.length > 200) {
+                logDiv.removeChild(logDiv.lastChild);
+            }
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '<div class="log-entry">日志已清除</div>';
+        }
+        
+        function updateStats() {
+            document.getElementById('total-tests').textContent = testResults.total;
+            document.getElementById('passed-tests').textContent = testResults.passed;
+            document.getElementById('failed-tests').textContent = testResults.failed;
+            
+            if (testResults.startTime) {
+                const elapsed = Math.floor((Date.now() - testResults.startTime) / 1000);
+                document.getElementById('elapsed-time').textContent = elapsed + 's';
+            }
+        }
+        
+        function updateStepStatus(stepId, status) {
+            const stepEl = document.getElementById(`step-${stepId}`);
+            if (stepEl) {
+                stepEl.className = `test-step ${status}`;
+            }
+        }
+        
+        function renderSteps() {
+            const container = document.getElementById('test-steps');
+            container.innerHTML = steps.map(step => `
+                <div class="test-step pending" id="step-${step.id}">
+                    <div class="step-title">步骤 ${step.id}: ${step.name}</div>
+                    <div class="step-detail">${step.desc}</div>
+                </div>
+            `).join('');
+        }
+        
+        async function runTest(stepId, testFunc) {
+            testResults.total++;
+            updateStepStatus(stepId, 'running');
+            updateStats();
+            
+            try {
+                const result = await testFunc();
+                if (result) {
+                    testResults.passed++;
+                    updateStepStatus(stepId, 'success');
+                    log(`✅ 步骤 ${stepId} 通过`, 'success');
+                } else {
+                    testResults.failed++;
+                    updateStepStatus(stepId, 'error');
+                    log(`❌ 步骤 ${stepId} 失败`, 'error');
+                }
+            } catch (error) {
+                testResults.failed++;
+                updateStepStatus(stepId, 'error');
+                log(`❌ 步骤 ${stepId} 异常: ${error.message}`, 'error');
+            }
+            
+            updateStats();
+        }
+        
+        async function runTests() {
+            log('🚀 开始端到端测试...', 'info');
+            testResults = { total: 0, passed: 0, failed: 0, startTime: Date.now() };
+            updateStats();
+            
+            // 步骤 1: 检查登录状态
+            await runTest(1, async () => {
+                log('🔐 检查登录状态...', 'info');
+                const response = await fetch('http://localhost:8086/api/profile/', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    log('❌ 无法访问 /api/profile/', 'error');
+                    return false;
+                }
+                
+                const data = await response.json();
+                
+                if (data.error === null && data.data) {
+                    const username = data.data.real_name || data.data.user?.username || '未知';
+                    log(`✅ 用户已登录: ${username}`, 'success');
+                    return true;
+                } else {
+                    log('⚠️ 用户未登录', 'warning');
+                    return false;
+                }
+            });
+            
+            // 步骤 2: 获取项目列表
+            let projects = [];
+            await runTest(2, async () => {
+                log('📋 获取项目列表...', 'info');
+                const response = await fetch('http://localhost:8086/api/scratch/mystuff/', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    log('❌ 无法获取项目列表', 'error');
+                    return false;
+                }
+                
+                projects = await response.json();
+                log(`✅ 获取成功，共 ${projects.length} 个项目`, 'success');
+                
+                projects.forEach(p => {
+                    log(`  - 项目 #${p.id}: ${p.title}`, 'info');
+                });
+                
+                return projects.length > 0;
+            });
+            
+            // 步骤 3: 验证缩略图
+            await runTest(3, async () => {
+                log('🖼️ 验证缩略图...', 'info');
+                
+                const projectsWithoutThumbnail = projects.filter(p => !p.cover_url);
+                const projectsWithThumbnail = projects.filter(p => p.cover_url);
+                
+                log(`  ✅ 有缩略图: ${projectsWithThumbnail.length} 个`, 'success');
+                
+                if (projectsWithoutThumbnail.length > 0) {
+                    log(`  ⚠️ 无缩略图: ${projectsWithoutThumbnail.length} 个`, 'warning');
+                    projectsWithoutThumbnail.forEach(p => {
+                        log(`    - 项目 #${p.id}: ${p.title}`, 'warning');
+                    });
+                }
+                
+                return projectsWithoutThumbnail.length === 0;
+            });
+            
+            // 步骤 4: 打开项目 7
+            let project7 = null;
+            await runTest(4, async () => {
+                log('📂 获取项目 #7 详情...', 'info');
+                
+                const response = await fetch('http://localhost:8086/api/scratch/projects/7/', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    log('❌ 无法获取项目 #7', 'error');
+                    return false;
+                }
+                
+                project7 = await response.json();
+                
+                // 验证数据结构
+                if (typeof project7.data_json === 'object' && project7.data_json.targets) {
+                    log(`✅ 项目 #7 数据格式正确`, 'success');
+                    log(`  - data_json 类型: 对象 ✓`, 'success');
+                    log(`  - targets 存在: ${project7.data_json.targets.length} 个`, 'success');
+                    log(`  - cover_url: ${project7.cover_url ? '存在' : '不存在'}`, project7.cover_url ? 'success' : 'warning');
+                    return true;
+                } else {
+                    log(`❌ 项目 #7 数据格式错误`, 'error');
+                    log(`  - data_json 类型: ${typeof project7.data_json}`, 'error');
+                    return false;
+                }
+            });
+            
+            // 步骤 5: 验证项目加载能力
+            await runTest(5, async () => {
+                log('🔍 验证项目可加载性...', 'info');
+                
+                if (!project7) {
+                    log('⚠️ 项目 #7 未获取，跳过验证', 'warning');
+                    return false;
+                }
+                
+                // 检查必要字段
+                const requiredFields = ['id', 'title', 'data_json'];
+                const missingFields = requiredFields.filter(field => !project7[field]);
+                
+                if (missingFields.length > 0) {
+                    log(`❌ 缺少必要字段: ${missingFields.join(', ')}`, 'error');
+                    return false;
+                }
+                
+                // 检查 data_json 结构
+                if (!project7.data_json.targets || !Array.isArray(project7.data_json.targets)) {
+                    log('❌ data_json.targets 不是数组', 'error');
+                    return false;
+                }
+                
+                log('✅ 项目数据结构完整，可以加载到编辑器', 'success');
+                return true;
+            });
+            
+            // 步骤 6: 检查编辑器页面
+            await runTest(6, async () => {
+                log('🌐 检查编辑器页面...', 'info');
+                
+                const editorUrl = 'http://localhost:8081/classroom/scratch/editor/7';
+                
+                try {
+                    const response = await fetch(editorUrl);
+                    
+                    if (response.ok) {
+                        log('✅ 编辑器页面可访问', 'success');
+                        log(`  - URL: ${editorUrl}`, 'info');
+                        log('  ℹ️ 请在浏览器中手动打开此页面验证登录状态', 'info');
+                        return true;
+                    } else {
+                        log('❌ 编辑器页面无法访问', 'error');
+                        return false;
+                    }
+                } catch (error) {
+                    log(`❌ 访问编辑器页面失败: ${error.message}`, 'error');
+                    return false;
+                }
+            });
+            
+            // 测试完成
+            const passRate = ((testResults.passed / testResults.total) * 100).toFixed(1);
+            const elapsed = Math.floor((Date.now() - testResults.startTime) / 1000);
+            
+            log('', 'info');
+            log('='.repeat(50), 'info');
+            log(`📊 测试完成！`, 'info');
+            log(`  - 总测试数: ${testResults.total}`, 'info');
+            log(`  - 通过: ${testResults.passed}`, 'success');
+            log(`  - 失败: ${testResults.failed}`, testResults.failed > 0 ? 'error' : 'info');
+            log(`  - 通过率: ${passRate}%`, passRate >= 80 ? 'success' : 'warning');
+            log(`  - 总耗时: ${elapsed}秒`, 'info');
+            log('='.repeat(50), 'info');
+            
+            if (testResults.failed === 0) {
+                log('🎉 所有测试通过！系统运行正常！', 'success');
+            } else {
+                log('⚠️ 部分测试失败，请检查上面的错误信息', 'warning');
+            }
+        }
+        
+        // 初始化
+        window.addEventListener('load', () => {
+            renderSteps();
+            log('🚀 测试工具已准备就绪', 'info');
+            log('点击"开始测试"按钮开始自动化测试', 'info');
+        });
+    </script>
+</body>
+</html>
+

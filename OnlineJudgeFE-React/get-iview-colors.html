@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>iView Colors Extractor</title>
+    <style>body{font-family:monospace;padding:20px;background:#1a1a1a;color:#fff;}</style>
+</head>
+<body>
+    <h2>iView Tag 颜色参考（需要在8080查看实际值）</h2>
+    <pre>
+iView Tag 颜色映射：
+- green: 成功色 (通常是 #19be6b 或类似)
+- blue: 主色 (通常是 #2d8cf0 或类似)
+- yellow: 警告色 (通常是 #ff9900 或类似)
+
+请在 8080 的浏览器控制台运行：
+const tag = document.querySelector('.ivu-tag-green') || document.querySelector('[class*="green"]');
+console.log('Green tag:', getComputedStyle(tag).backgroundColor);
+
+const tagBlue = document.querySelector('.ivu-tag-blue');
+console.log('Blue tag:', getComputedStyle(tagBlue).backgroundColor);
+
+const tagYellow = document.querySelector('.ivu-tag-yellow');
+console.log('Yellow tag:', getComputedStyle(tagYellow).backgroundColor);
+    </pre>
+</body>
+</html>

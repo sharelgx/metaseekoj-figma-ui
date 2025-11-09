@@ -1,0 +1,37 @@
+/* 代码展示样式 - 强制覆盖SyntaxHighlighter默认样式 */
+
+/* 代码块字体大小 */
+.language-cpp code,
+.language-python code,
+.language-javascript code,
+.language-java code,
+code[class*="language-"] {
+  font-size: 36px !important;
+  line-height: 2.2 !important;
+  font-weight: 500 !important;
+}
+
+/* 行号字体 */
+.linenumber {
+  font-size: 28px !important;
+  line-height: 2.2 !important;
+  min-width: 3em !important;
+}
+
+/* pre标签 */
+pre[class*="language-"] {
+  font-size: 36px !important;
+  line-height: 2.2 !important;
+  padding: 40px !important;
+}
+
+/* 代码高亮容器 */
+.react-syntax-highlighter-line-number {
+  font-size: 28px !important;
+}
+
+/* token样式 */
+.token {
+  font-size: inherit !important;
+}
+

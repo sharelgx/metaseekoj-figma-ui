@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>自动化测试（带结果报告）</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #000;
+            color: #0f0;
+        }
+        .test { padding: 10px; margin: 5px 0; border-left: 4px solid #666; }
+        .pass { border-left-color: #0f0; color: #0f0; }
+        .fail { border-left-color: #f00; color: #f00; }
+        iframe { width: 1px; height: 1px; position: absolute; left: -9999px; }
+        #summary { font-size: 18px; margin-top: 20px; padding: 20px; background: #1a1a1a; border: 2px solid #0a0; }
+    </style>
+</head>
+<body>
+    <h1>🤖 自动化测试（自动报告结果）</h1>
+    <div id="output"></div>
+    <div id="summary"></div>
+    <iframe id="iframe" src="http://localhost:8601/"></iframe>
+    
+    <script>
+        const output = document.getElementById('output');
+        const summary = document.getElementById('summary');
+        let testsPassed = 0;
+        let testsFailed = 0;
+        let testResults = [];
+
+        function log(msg, status = 'info') {
+            const div = document.createElement('div');
+            div.className = `test ${status}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            output.appendChild(div);
+            console.log(msg);
+            
+            testResults.push({ time: new Date().toLocaleTimeString(), msg, status });
+        }
+
+        async function sleep(ms) {
+            return new Promise(r => setTimeout(r, ms));
+        }
+
+        async function sendResultToBackend(result) {
+            try {
+                // 将测试结果发送到后端（如果有端点）
+                // 这里暂时只在控制台输出
+                console.log('========== 测试结果 JSON ==========');
+                console.log(JSON.stringify(result, null, 2));
+                console.log('===================================');
+            } catch (e) {
+                console.error('发送结果失败:', e);
+            }
+        }
+
+        async function runTests() {
+            log('🚀 开始自动化测试...', 'running');
+            await sleep(1000);
+
+            // 测试 1: 后端服务
+            log('📋 测试 1: 检查后端服务', 'running');
+            try {
+                const res = await fetch('http://localhost:8086/api/website/');
+                if (res.ok) {
+                    log('✅ 测试 1 通过: 后端服务正常', 'pass');
+                    testsPassed++;
+                } else throw new Error('状态码: ' + res.status);
+            } catch (e) {
+                log('❌ 测试 1 失败: ' + e.message, 'fail');
+                testsFailed++;
+            }
+
+            // 测试 2: 登录
+            log('📋 测试 2: 登录系统', 'running');
+            try {
+                const res = await fetch('http://localhost:8086/api/login/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username: 'root', password: 'lgx780504' })
+                });
+                const data = await res.json();
+                if (data.error === null) {
+                    log('✅ 测试 2 通过: 登录成功', 'pass');
+                    testsPassed++;
+                } else throw new Error(data.error);
+            } catch (e) {
+                log('❌ 测试 2 失败: ' + e.message, 'fail');
+                testsFailed++;
+            }
+
+            // 测试 3: iframe 加载
+            log('📋 测试 3: 检查 iframe 状态', 'running');
+            const iframe = document.getElementById('iframe');
+            if (iframe && iframe.contentWindow) {
+                log('✅ 测试 3 通过: iframe 正常加载', 'pass');
+                testsPassed++;
+            } else {
+                log('❌ 测试 3 失败: iframe 未加载', 'fail');
+                testsFailed++;
+                showSummary();
+                return;
+            }
+
+            // 测试 4: 等待 VM 初始化
+            log('📋 测试 4: 等待 VM 初始化（最多15秒）', 'running');
+            try {
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        log('⚠️ VM 初始化超时，检查是否收到任何消息...', 'fail');
+                        reject(new Error('超时'));
+                    }, 15000);
+                    
+                    const handler = (e) => {
+                        // 记录所有收到的消息
+                        if (e.origin.includes('localhost')) {
+                            console.log('收到消息:', e.data);
+                        }
+                        
+                        if (e.data && e.data.type === 'SCRATCH_VM_READY') {
+                            clearTimeout(timeout);
+                            window.removeEventListener('message', handler);
+                            resolve();
+                        }
+                    };
+                    window.addEventListener('message', handler);
+                });
+                log('✅ 测试 4 通过: VM 初始化成功', 'pass');
+                testsPassed++;
+            } catch (e) {
+                log('❌ 测试 4 失败: ' + e.message, 'fail');
+                testsFailed++;
+                showSummary();
+                return;
+            }
+
+            // 测试 5: 导出数据
+            log('📋 测试 5: 测试导出功能', 'running');
+            try {
+                const data = await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(new Error('超时')), 5000);
+                    const handler = (e) => {
+                        if (e.data && e.data.type === 'EXPORT_PROJECT_RESPONSE') {
+                            clearTimeout(timeout);
+                            window.removeEventListener('message', handler);
+                            resolve(e.data.data);
+                        }
+                    };
+                    window.addEventListener('message', handler);
+                    iframe.contentWindow.postMessage({ type: 'EXPORT_PROJECT_REQUEST' }, '*');
+                });
+                
+                const size = JSON.stringify(data).length;
+                log(`✅ 测试 5 通过: 导出成功 (${size} 字节, ${data.targets?.length || 0} 个对象)`, 'pass');
+                testsPassed++;
+                
+                // 测试 6: 保存到后端
+                log('📋 测试 6: 保存项目到后端', 'running');
+                const csrf = document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='))?.split('=')[1];
+                const saveRes = await fetch('http://localhost:8086/api/scratch/projects/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf || '' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        title: '自动测试 ' + new Date().toLocaleTimeString(),
+                        description: '自动化测试创建',
+                        is_public: true,
+                        data_json: data
+                    })
+                });
+                
+                const saveData = await saveRes.json();
+                if (saveData.error === null && saveData.data?.id) {
+                    log(`✅ 测试 6 通过: 保存成功 (ID: ${saveData.data.id})`, 'pass');
+                    testsPassed++;
+                    
+                    // 自动删除测试项目
+                    await fetch(`http://localhost:8086/api/scratch/projects/${saveData.data.id}/`, {
+                        method: 'DELETE',
+                        headers: { 'X-CSRFToken': csrf || '' },
+                        credentials: 'include'
+                    });
+                } else {
+                    throw new Error(saveData.error || 'ID 为空');
+                }
+            } catch (e) {
+                log('❌ 测试失败: ' + e.message, 'fail');
+                testsFailed++;
+            }
+
+            showSummary();
+        }
+
+        function showSummary() {
+            const total = testsPassed + testsFailed;
+            const passed = testsFailed === 0;
+            
+            summary.innerHTML = `
+                <h2 style="color: ${passed ? '#0f0' : '#f00'};">
+                    ${passed ? '🎉 测试通过！' : '❌ 测试失败'}
+                </h2>
+                <div>总计: ${total} 个测试</div>
+                <div style="color: #0f0;">通过: ${testsPassed}</div>
+                <div style="color: #f00;">失败: ${testsFailed}</div>
+                ${passed ? '<div style="margin-top: 20px; color: #0ff;">✅ 保存功能完全正常，可以使用了！</div>' : ''}
+            `;
+            
+            const result = {
+                timestamp: new Date().toISOString(),
+                total, testsPassed, testsFailed, passed,
+                details: testResults
+            };
+            
+            sendResultToBackend(result);
+            
+            // 在文档标题中显示结果（方便查看）
+            document.title = passed ? '✅ 测试通过' : `❌ 失败 ${testsFailed}/${total}`;
+        }
+
+        // 自动运行
+        window.addEventListener('load', () => {
+            log('⏳ 等待 6 秒让 Scratch 编辑器完全加载...', 'info');
+            setTimeout(runTests, 6000);
+        });
+    </script>
+</body>
+</html>
+

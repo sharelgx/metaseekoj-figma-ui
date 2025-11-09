@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>快速检查</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 4px solid #667eea;
+            background: #334155;
+        }
+        .success { border-left-color: #10b981; }
+        .error { border-left-color: #ef4444; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Scratch 编辑器快速检查</h1>
+    <div>
+        <button onclick="checkAll()">🚀 开始检查</button>
+        <button onclick="openEditor()">📝 打开编辑器</button>
+        <button onclick="openProjects()">📋 打开项目列表</button>
+    </div>
+    <div id="results"></div>
+    
+    <script>
+        function log(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.textContent = msg;
+            document.getElementById('results').appendChild(div);
+        }
+        
+        async function checkAll() {
+            document.getElementById('results').innerHTML = '';
+            log('🔍 开始检查...', 'info');
+            
+            // 1. 检查登录状态
+            try {
+                const res = await fetch('http://localhost:8086/api/profile/', {credentials: 'include'});
+                const data = await res.json();
+                if (data.error === null && data.data) {
+                    log(`✅ 登录状态: 已登录 (${data.data.real_name || '用户'})`, 'success');
+                } else {
+                    log('❌ 登录状态: 未登录', 'error');
+                }
+            } catch (e) {
+                log('❌ 登录检查失败: ' + e.message, 'error');
+            }
+            
+            // 2. 检查项目列表
+            try {
+                const res = await fetch('http://localhost:8086/api/scratch/mystuff/', {credentials: 'include'});
+                const projects = await res.json();
+                log(`✅ 项目总数: ${projects.length}`, 'success');
+                
+                const withThumbnail = projects.filter(p => p.cover_url).length;
+                const withoutThumbnail = projects.filter(p => !p.cover_url).length;
+                
+                log(`✅ 有缩略图: ${withThumbnail} 个`, 'success');
+                if (withoutThumbnail > 0) {
+                    log(`⚠️ 无缩略图: ${withoutThumbnail} 个`, 'error');
+                }
+            } catch (e) {
+                log('❌ 项目列表获取失败: ' + e.message, 'error');
+            }
+            
+            // 3. 检查项目7
+            try {
+                const res = await fetch('http://localhost:8086/api/scratch/projects/7/', {credentials: 'include'});
+                const project = await res.json();
+                
+                log(`✅ 项目7标题: ${project.title}`, 'success');
+                log(`✅ data_json类型: ${typeof project.data_json}`, project.data_json && typeof project.data_json === 'object' ? 'success' : 'error');
+                log(`✅ 有targets: ${project.data_json?.targets ? '是' : '否'}`, project.data_json?.targets ? 'success' : 'error');
+                log(`✅ targets数量: ${project.data_json?.targets?.length || 0}`, 'success');
+                log(`✅ 有缩略图: ${project.cover_url ? '是' : '否'}`, project.cover_url ? 'success' : 'error');
+            } catch (e) {
+                log('❌ 项目7检查失败: ' + e.message, 'error');
+            }
+            
+            log('', 'info');
+            log('✅ 后端数据检查完成！', 'success');
+            log('', 'info');
+            log('📝 下一步：点击"打开编辑器"按钮，查看是否显示登录状态', 'info');
+        }
+        
+        function openEditor() {
+            window.open('http://localhost:8081/classroom/scratch/editor/7', '_blank');
+        }
+        
+        function openProjects() {
+            window.open('http://localhost:8081/classroom/scratch/projects', '_blank');
+        }
+        
+        window.onload = () => {
+            checkAll();
+        };
+    </script>
+</body>
+</html>
+

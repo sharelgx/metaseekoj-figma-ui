@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>编辑器诊断工具</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #000; color: #0f0; }
+        .status { padding: 10px; margin: 5px 0; border-left: 4px solid #666; background: #0a0a0a; }
+        .ok { border-left-color: #0f0; color: #0f0; }
+        .error { border-left-color: #f00; color: #f00; }
+        button { background: #0a0; color: #000; border: none; padding: 15px 30px; margin: 10px 5px; cursor: pointer; border-radius: 4px; font-size: 16px; font-weight: bold; }
+        button:hover { background: #0f0; }
+        iframe { width: 100%; height: 600px; border: 2px solid #0a0; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🔬 编辑器状态实时诊断</h1>
+    <button onclick="checkStatus()">🔍 检查状态</button>
+    <button onclick="testSave()">💾 测试保存功能</button>
+    <button onclick="location.reload()">🔄 刷新</button>
+    
+    <div id="result"></div>
+    
+    <h2>编辑器 iframe</h2>
+    <iframe id="iframe" src="http://localhost:8081/classroom/scratch/editor"></iframe>
+
+    <script>
+        const result = document.getElementById('result');
+        let checkInterval = null;
+
+        function updateResult(html) {
+            result.innerHTML = html;
+        }
+
+        function checkStatus() {
+            const iframe = document.getElementById('iframe');
+            let html = `<h2>状态检查 [${new Date().toLocaleTimeString()}]</h2>`;
+            
+            // 由于跨域，我们通过 postMessage 来检查
+            html += `<div class="status">📨 通过 postMessage 检查状态...</div>`;
+            
+            // 发送检查请求
+            iframe.contentWindow.postMessage({ type: 'CHECK_STATUS' }, '*');
+            
+            updateResult(html);
+            
+            // 设置响应监听
+            const responseHandler = (event) => {
+                if (!event.origin.includes('localhost')) return;
+                
+                if (event.data && event.data.type === 'STATUS_RESPONSE') {
+                    window.removeEventListener('message', responseHandler);
+                    
+                    const status = event.data.data;
+                    html += `<div class="status ${status.vmReady ? 'ok' : 'error'}">
+                        VM 状态: ${status.vmReady ? '✅ 已初始化' : '❌ 未初始化'}
+                    </div>`;
+                    html += `<div class="status ${status.exportFn ? 'ok' : 'error'}">
+                        导出函数: ${status.exportFn ? '✅ 存在' : '❌ 不存在'}
+                    </div>`;
+                    html += `<div class="status ${status.loadFn ? 'ok' : 'error'}">
+                        加载函数: ${status.loadFn ? '✅ 存在' : '❌ 不存在'}
+                    </div>`;
+                    html += `<div class="status ${status.userLoggedIn ? 'ok' : 'error'}">
+                        登录状态: ${status.userLoggedIn ? '✅ 已登录' : '❌ 未登录'}
+                    </div>`;
+                    
+                    updateResult(html);
+                }
+            };
+            
+            window.addEventListener('message', responseHandler);
+            
+            // 5秒超时
+            setTimeout(() => {
+                window.removeEventListener('message', responseHandler);
+            }, 5000);
+        }
+
+        function testSave() {
+            const iframe = document.getElementById('iframe');
+            let html = `<h2>保存功能测试 [${new Date().toLocaleTimeString()}]</h2>`;
+            html += `<div class="status">📨 请求导出项目数据...</div>`;
+            updateResult(html);
+            
+            // 请求导出
+            iframe.contentWindow.postMessage({ type: 'EXPORT_PROJECT_REQUEST' }, '*');
+            
+            const exportHandler = (event) => {
+                if (!event.origin.includes('localhost')) return;
+                
+                if (event.data && event.data.type === 'EXPORT_PROJECT_RESPONSE') {
+                    window.removeEventListener('message', exportHandler);
+                    
+                    const data = event.data.data;
+                    if (data) {
+                        const size = JSON.stringify(data).length;
+                        html += `<div class="status ok">✅ 导出成功！</div>`;
+                        html += `<div class="status">数据大小: ${size} 字节</div>`;
+                        html += `<div class="status">对象数量: ${data.targets?.length || 0}</div>`;
+                        html += `<div class="status ok">💾 保存功能正常！</div>`;
+                    } else {
+                        html += `<div class="status error">❌ 导出失败：数据为空</div>`;
+                    }
+                    
+                    updateResult(html);
+                }
+            };
+            
+            window.addEventListener('message', exportHandler);
+            
+            setTimeout(() => {
+                window.removeEventListener('message', exportHandler);
+            }, 5000);
+        }
+
+        // 监听 VM 就绪消息
+        window.addEventListener('message', (event) => {
+            if (!event.origin.includes('localhost')) return;
+            
+            if (event.data && event.data.type === 'SCRATCH_VM_READY') {
+                updateResult(`
+                    <div class="status ok">
+                        ✅ 收到 SCRATCH_VM_READY 消息！
+                        <br>时间: ${event.data.data.timestamp}
+                    </div>
+                `);
+            }
+        });
+
+        // 自动定期检查
+        window.addEventListener('load', () => {
+            updateResult('<div class="status">⏳ 等待 iframe 加载...</div>');
+            
+            setTimeout(() => {
+                updateResult('<div class="status">ℹ️ iframe 已加载，点击"检查状态"按钮</div>');
+            }, 8000);
+        });
+    </script>
+</body>
+</html>
+

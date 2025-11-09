@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Scratch 保存功能测试</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .controls {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #0a0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #0f0;
+        }
+        button.danger {
+            background: #a00;
+            color: #fff;
+        }
+        button.danger:hover {
+            background: #f00;
+        }
+        #logs {
+            background: #000;
+            border: 1px solid #0a0;
+            padding: 15px;
+            height: 400px;
+            overflow-y: auto;
+            font-size: 12px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+        .log-entry {
+            margin: 3px 0;
+            padding: 5px;
+            border-left: 3px solid #0a0;
+            padding-left: 10px;
+        }
+        .log-success {
+            color: #0f0;
+            border-left-color: #0f0;
+        }
+        .log-error {
+            color: #f00;
+            border-left-color: #f00;
+        }
+        .log-info {
+            color: #0ff;
+            border-left-color: #0ff;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #0a0;
+            border-radius: 8px;
+        }
+        h2 {
+            color: #0ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 Scratch 保存功能测试工具</h1>
+        
+        <div class="controls">
+            <h2>测试控制</h2>
+            <button onclick="checkFunctions()">🔍 检查函数是否存在</button>
+            <button onclick="exportProject()">📤 导出项目数据</button>
+            <button onclick="testSaveFlow()">💾 测试完整保存流程</button>
+            <button onclick="clearLogs()" class="danger">🗑️ 清空日志</button>
+        </div>
+
+        <div id="logs"></div>
+
+        <h2>Scratch 编辑器</h2>
+        <iframe id="scratchIframe" src="http://localhost:8601/"></iframe>
+    </div>
+
+    <script>
+        const logsDiv = document.getElementById('logs');
+        let iframe = null;
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString() + '.' + String(new Date().getMilliseconds()).padStart(3, '0');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${timestamp}] ${message}`;
+            logsDiv.appendChild(entry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+            console.log(`[${type}] ${message}`);
+        }
+
+        function clearLogs() {
+            logsDiv.innerHTML = '';
+            log('日志已清空', 'info');
+        }
+
+        function checkFunctions() {
+            log('🔍 开始检查全局函数...', 'info');
+            
+            iframe = document.getElementById('scratchIframe');
+            
+            if (!iframe || !iframe.contentWindow) {
+                log('❌ iframe 未准备好', 'error');
+                return;
+            }
+
+            const functions = [
+                'scratchExportProjectData',
+                'scratchLoadProjectData',
+                '__scratchVM'
+            ];
+
+            functions.forEach(fn => {
+                try {
+                    const exists = iframe.contentWindow[fn] !== undefined;
+                    if (exists) {
+                        log(`✅ ${fn} 存在`, 'success');
+                        
+                        // 如果是 VM，显示更多信息
+                        if (fn === '__scratchVM' && iframe.contentWindow[fn]) {
+                            log(`   VM 类型: ${typeof iframe.contentWindow[fn]}`, 'info');
+                            log(`   VM 是否有 toJSON: ${typeof iframe.contentWindow[fn].toJSON === 'function' ? '是' : '否'}`, 'info');
+                        }
+                    } else {
+                        log(`❌ ${fn} 不存在`, 'error');
+                    }
+                } catch (e) {
+                    log(`⚠️ 无法访问 ${fn} (跨域限制): ${e.message}`, 'error');
+                    log(`💡 这是正常的，跨域时无法直接访问 iframe 内部变量`, 'info');
+                }
+            });
+
+            log('', 'info');
+            log('💡 由于跨域限制，我们无法直接访问 iframe 的全局变量', 'info');
+            log('💡 但在同域的 Editor.tsx 中可以访问', 'info');
+        }
+
+        function exportProject() {
+            log('📤 尝试导出项目数据...', 'info');
+            
+            iframe = document.getElementById('scratchIframe');
+            
+            if (!iframe || !iframe.contentWindow) {
+                log('❌ iframe 未准备好', 'error');
+                return;
+            }
+
+            // 由于跨域，我们通过 postMessage 请求导出
+            log('📨 通过 postMessage 请求导出...', 'info');
+            iframe.contentWindow.postMessage({
+                type: 'EXPORT_PROJECT_REQUEST'
+            }, '*');
+            
+            log('✅ 请求已发送，等待 iframe 响应...', 'info');
+        }
+
+        function testSaveFlow() {
+            log('🧪 开始测试完整保存流程...', 'info');
+            log('', 'info');
+            log('步骤 1: 检查函数是否存在', 'info');
+            checkFunctions();
+            
+            setTimeout(() => {
+                log('', 'info');
+                log('步骤 2: 尝试导出项目数据', 'info');
+                exportProject();
+            }, 2000);
+        }
+
+        // 监听来自 iframe 的消息
+        window.addEventListener('message', (event) => {
+            if (!event.origin.includes('localhost')) {
+                return;
+            }
+
+            if (event.data && event.data.type === 'EXPORT_PROJECT_RESPONSE') {
+                log('📬 收到 iframe 的导出响应', 'success');
+                log(`数据大小: ${JSON.stringify(event.data.data).length} 字节`, 'info');
+                log(`项目包含: ${event.data.data.targets?.length || 0} 个对象`, 'info');
+            }
+        });
+
+        // 页面加载完成
+        window.addEventListener('load', () => {
+            log('🚀 测试工具已启动', 'success');
+            log('💡 等待 5 秒后 iframe 应该已经完全加载...', 'info');
+            
+            setTimeout(() => {
+                log('', 'info');
+                log('现在可以点击"检查函数"按钮测试', 'info');
+            }, 5000);
+        });
+
+        // 监听 iframe 加载完成
+        document.getElementById('scratchIframe').addEventListener('load', () => {
+            log('✅ iframe 内容已加载完成', 'success');
+        });
+    </script>
+</body>
+</html>
+

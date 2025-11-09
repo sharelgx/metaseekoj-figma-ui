@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>VM 状态检查</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            background: #000;
+            color: #0f0;
+        }
+        .status {
+            background: #1a1a1a;
+            border: 2px solid #0a0;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .item {
+            padding: 10px;
+            margin: 5px 0;
+            background: #0a0a0a;
+            border-left: 4px solid #0a0;
+        }
+        .success { border-left-color: #0f0; color: #0f0; }
+        .error { border-left-color: #f00; color: #f00; }
+        .warning { border-left-color: #ff0; color: #ff0; }
+        button {
+            background: #0a0;
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            margin: 10px 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #0f0;
+        }
+        iframe {
+            width: 100%;
+            height: 500px;
+            border: 2px solid #0a0;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔬 Scratch VM 状态检查工具</h1>
+    
+    <div>
+        <button onclick="checkStatus()">🔍 检查 VM 状态</button>
+        <button onclick="tryExport()">📤 尝试导出数据</button>
+        <button onclick="location.reload()">🔄 刷新页面</button>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <iframe id="iframe" src="http://localhost:8601/"></iframe>
+
+    <script>
+        let iframe = null;
+        let checkCount = 0;
+
+        function updateStatus(html) {
+            document.getElementById('status').innerHTML = html;
+        }
+
+        function checkStatus() {
+            checkCount++;
+            iframe = document.getElementById('iframe');
+            
+            let html = `<h2>检查 #${checkCount} (${new Date().toLocaleTimeString()})</h2>`;
+            
+            if (!iframe) {
+                html += `<div class="item error">❌ iframe 元素不存在</div>`;
+                updateStatus(html);
+                return;
+            }
+            
+            html += `<div class="item success">✅ iframe 元素存在</div>`;
+            
+            if (!iframe.contentWindow) {
+                html += `<div class="item error">❌ iframe.contentWindow 不可访问</div>`;
+                updateStatus(html);
+                return;
+            }
+            
+            html += `<div class="item success">✅ iframe.contentWindow 可访问</div>`;
+            
+            // 尝试检查函数（会失败，因为跨域）
+            try {
+                const exportFn = iframe.contentWindow.scratchExportProjectData;
+                if (exportFn) {
+                    html += `<div class="item success">✅ scratchExportProjectData 存在（同域）</div>`;
+                } else {
+                    html += `<div class="item error">❌ scratchExportProjectData 不存在</div>`;
+                }
+            } catch (e) {
+                html += `<div class="item warning">⚠️ 跨域限制，无法直接检查（正常现象）</div>`;
+                html += `<div class="item warning">   错误: ${e.message}</div>`;
+                html += `<div class="item">💡 将通过 postMessage 测试...</div>`;
+            }
+            
+            updateStatus(html);
+        }
+
+        function tryExport() {
+            iframe = document.getElementById('iframe');
+            
+            if (!iframe || !iframe.contentWindow) {
+                updateStatus('<div class="item error">❌ iframe 未准备好</div>');
+                return;
+            }
+            
+            updateStatus(`
+                <h2>导出测试</h2>
+                <div class="item">📨 正在发送导出请求...</div>
+            `);
+            
+            // 设置响应监听器
+            const responseHandler = (event) => {
+                if (!event.origin.includes('localhost')) return;
+                
+                if (event.data && event.data.type === 'EXPORT_PROJECT_RESPONSE') {
+                    const data = event.data.data;
+                    const dataSize = JSON.stringify(data).length;
+                    
+                    updateStatus(`
+                        <h2>导出测试</h2>
+                        <div class="item success">✅ 导出成功！</div>
+                        <div class="item">📦 数据大小: ${dataSize} 字节</div>
+                        <div class="item">🎯 对象数量: ${data.targets?.length || 0}</div>
+                        <div class="item">📊 扩展数量: ${data.extensions?.length || 0}</div>
+                        <div class="item">🔧 meta.semver: ${data.meta?.semver || 'N/A'}</div>
+                    `);
+                    
+                    window.removeEventListener('message', responseHandler);
+                }
+            };
+            
+            window.addEventListener('message', responseHandler);
+            
+            // 发送导出请求
+            iframe.contentWindow.postMessage({
+                type: 'EXPORT_PROJECT_REQUEST'
+            }, '*');
+            
+            // 5秒超时
+            setTimeout(() => {
+                window.removeEventListener('message', responseHandler);
+            }, 5000);
+        }
+
+        // 页面加载完成
+        window.addEventListener('load', () => {
+            updateStatus(`
+                <div class="item">🚀 工具已启动</div>
+                <div class="item">⏳ 等待 iframe 加载（约 5 秒）...</div>
+            `);
+            
+            setTimeout(() => {
+                updateStatus(`
+                    <div class="item success">✅ iframe 应该已经加载完成</div>
+                    <div class="item">💡 现在可以点击"检查 VM 状态"按钮</div>
+                `);
+            }, 5000);
+        });
+
+        // 监听 iframe 加载
+        document.getElementById('iframe').addEventListener('load', () => {
+            updateStatus(`
+                <div class="item success">✅ iframe 内容已加载</div>
+                <div class="item">⏳ 等待 3 秒让 VM 初始化...</div>
+            `);
+            
+            setTimeout(() => {
+                checkStatus();
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
+

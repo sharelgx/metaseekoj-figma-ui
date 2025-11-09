@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PostMessage 通信测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .panel {
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        h2 {
+            margin-top: 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #log {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        iframe {
+            width: 100%;
+            height: 500px;
+            border: 2px solid #ccc;
+        }
+        .success {
+            color: #0f0;
+        }
+        .error {
+            color: #f00;
+        }
+        .info {
+            color: #ff0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 PostMessage 通信测试</h1>
+    
+    <div class="container">
+        <div class="panel">
+            <h2>控制面板</h2>
+            <button onclick="testExport()">测试导出项目</button>
+            <button onclick="testGetThumbnail()">测试获取缩略图</button>
+            <button onclick="clearLog()">清空日志</button>
+            <button onclick="checkIframe()">检查 iframe 状态</button>
+        </div>
+        
+        <div class="panel">
+            <h2>当前状态</h2>
+            <p>响应计数: <span id="responseCount">0</span></p>
+            <p>最后响应时间: <span id="lastResponse">-</span></p>
+            <p>iframe 状态: <span id="iframeStatus">未知</span></p>
+        </div>
+    </div>
+    
+    <div class="panel">
+        <h2>Scratch 编辑器 (http://localhost:8601)</h2>
+        <iframe id="scratchIframe" src="http://localhost:8601"></iframe>
+    </div>
+    
+    <div class="panel">
+        <h2>通信日志</h2>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        let responseCount = 0;
+        const iframe = document.getElementById('scratchIframe');
+        const logDiv = document.getElementById('log');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            logDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function clearLog() {
+            logDiv.innerHTML = '';
+            log('日志已清空', 'info');
+        }
+        
+        function checkIframe() {
+            const status = iframe.contentWindow ? '✅ 已就绪' : '❌ 未就绪';
+            document.getElementById('iframeStatus').textContent = status;
+            log(`iframe 状态: ${status}`, 'info');
+        }
+        
+        function testExport() {
+            log('📨 发送 EXPORT_PROJECT_REQUEST...', 'info');
+            
+            if (!iframe.contentWindow) {
+                log('❌ iframe 未就绪！', 'error');
+                return;
+            }
+            
+            iframe.contentWindow.postMessage({
+                type: 'EXPORT_PROJECT_REQUEST'
+            }, 'http://localhost:8601');
+            
+            log('✅ 请求已发送，等待响应...', 'success');
+        }
+        
+        function testGetThumbnail() {
+            log('📸 发送 GET_THUMBNAIL...', 'info');
+            
+            if (!iframe.contentWindow) {
+                log('❌ iframe 未就绪！', 'error');
+                return;
+            }
+            
+            iframe.contentWindow.postMessage({
+                type: 'GET_THUMBNAIL'
+            }, 'http://localhost:8601');
+            
+            log('✅ 请求已发送，等待响应...', 'success');
+        }
+        
+        // 监听来自 iframe 的消息
+        window.addEventListener('message', (event) => {
+            log('========================================', 'info');
+            log(`📬 收到消息`, 'info');
+            log(`   Origin: ${event.origin}`, 'info');
+            log(`   Type: ${event.data?.type || '未知'}`, 'info');
+            
+            if (event.data && event.data.type === 'EXPORT_PROJECT_RESPONSE') {
+                responseCount++;
+                document.getElementById('responseCount').textContent = responseCount;
+                document.getElementById('lastResponse').textContent = new Date().toLocaleTimeString();
+                
+                const projectData = event.data.data;
+                log(`✅ 收到 EXPORT_PROJECT_RESPONSE！`, 'success');
+                log(`   数据类型: ${typeof projectData}`, 'success');
+                log(`   数据大小: ${JSON.stringify(projectData).length} 字节`, 'success');
+                
+                if (projectData && projectData.targets) {
+                    log(`   targets 数量: ${projectData.targets.length}`, 'success');
+                    const totalBlocks = projectData.targets.reduce((sum, target) => 
+                        sum + Object.keys(target.blocks || {}).length, 0);
+                    log(`   总积木数: ${totalBlocks}`, 'success');
+                }
+            } else if (event.data && event.data.type === 'GET_THUMBNAIL_RESPONSE') {
+                responseCount++;
+                document.getElementById('responseCount').textContent = responseCount;
+                document.getElementById('lastResponse').textContent = new Date().toLocaleTimeString();
+                
+                log(`✅ 收到 GET_THUMBNAIL_RESPONSE！`, 'success');
+                log(`   缩略图大小: ${event.data.data?.length || 0} 字节`, 'success');
+            } else if (event.data && event.data.type) {
+                log(`ℹ️ 其他消息类型: ${event.data.type}`, 'info');
+            }
+            
+            log('========================================', 'info');
+        });
+        
+        // iframe 加载完成后的初始化
+        iframe.onload = () => {
+            log('🎉 iframe 已加载完成！', 'success');
+            checkIframe();
+            
+            setTimeout(() => {
+                log('⏰ 等待 2 秒后可以开始测试...', 'info');
+            }, 100);
+        };
+        
+        // 页面加载完成
+        window.onload = () => {
+            log('🚀 测试页面已就绪', 'success');
+            log('💡 提示：等待 iframe 加载完成后（约 5-10 秒），点击"测试导出项目"按钮', 'info');
+        };
+    </script>
+</body>
+</html>
+
