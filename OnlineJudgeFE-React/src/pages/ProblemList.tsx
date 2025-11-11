@@ -52,14 +52,15 @@ export default function ProblemList() {
   }, [])
 
   useEffect(() => {
+    const keywordParam = searchParams.get('keyword') || ''
     const newQuery = {
-      keyword: searchParams.get('keyword') || '',
+      keyword: keywordParam,
       difficulty: searchParams.get('difficulty') || '',
       tag: searchParams.get('tag') || '',
       page: parseInt(searchParams.get('page') || '1'),
       limit: parseInt(searchParams.get('limit') || '10')
     }
-    setKeywordInput(keyword)
+    setKeywordInput(keywordParam)
     setQuery(newQuery)
   }, [searchParams])
 
