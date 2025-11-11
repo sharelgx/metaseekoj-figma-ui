@@ -44,6 +44,7 @@ export default function ProblemList() {
     page: parseInt(searchParams.get('page') || '1'),
     limit: parseInt(searchParams.get('limit') || '10')
   })
+  const [keywordInput, setKeywordInput] = useState(searchParams.get('keyword') || '')
 
   useEffect(() => {
     document.title = '编程题列表 - 元探索少儿编程'
@@ -58,6 +59,7 @@ export default function ProblemList() {
       page: parseInt(searchParams.get('page') || '1'),
       limit: parseInt(searchParams.get('limit') || '10')
     }
+    setKeywordInput(keyword)
     setQuery(newQuery)
   }, [searchParams])
 
@@ -97,14 +99,20 @@ export default function ProblemList() {
     }
   }
 
-  const updateURL = (newQuery: typeof query) => {
-    const params = new URLSearchParams()
-    if (newQuery.keyword) params.set('keyword', newQuery.keyword)
-    if (newQuery.difficulty) params.set('difficulty', newQuery.difficulty)
-    if (newQuery.tag) params.set('tag', newQuery.tag)
-    if (newQuery.page > 1) params.set('page', newQuery.page.toString())
-    if (newQuery.limit !== 10) params.set('limit', newQuery.limit.toString())
+  const updateURL = (newParams: Partial<typeof query>) => {
+    const updatedQuery = { ...query, ...newParams }
+    const params: any = {}
+
+    if (updatedQuery.keyword) params.keyword = updatedQuery.keyword
+    if (updatedQuery.difficulty) params.difficulty = updatedQuery.difficulty
+    if (updatedQuery.tag) params.tag = updatedQuery.tag
+    if (updatedQuery.page > 1) params.page = updatedQuery.page.toString()
+    if (updatedQuery.limit !== 10) params.limit = updatedQuery.limit.toString()
     setSearchParams(params)
+  }
+
+  const handleSearch = () => {
+    updateURL({ ...query, keyword: keywordInput.trim(), page: 1 })
   }
 
   const filterByDifficulty = (diff: string) => {
@@ -117,6 +125,7 @@ export default function ProblemList() {
   }
 
   const onReset = () => {
+    setKeywordInput('')
     updateURL({ keyword: '', difficulty: '', tag: '', page: 1, limit: 10 })
   }
 
@@ -302,9 +311,14 @@ export default function ProblemList() {
                   <div style={{ position: 'relative' }}>
                     <input
                       type="text"
-                      value={query.keyword}
-                      onChange={(e) => setQuery({ ...query, keyword: e.target.value })}
-                      onKeyDown={(e) => e.key === 'Enter' && updateURL({ ...query, page: 1 })}
+                      value={keywordInput}
+                      onChange={(e) => setKeywordInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          handleSearch()
+                        }
+                      }}
                       placeholder="keyword"
                       style={{
                         width: '200px',
@@ -326,17 +340,43 @@ export default function ProblemList() {
                         e.currentTarget.style.boxShadow = 'none'
                       }}
                     />
-                    <Search style={{
-                      position: 'absolute',
-                      right: '8px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      color: '#c5c8ce',  // 8080: icon颜色
-                      width: '16px',
-                      height: '16px',
-                      pointerEvents: 'none'
-                    }} />
+                    <Search
+                      onClick={handleSearch}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: '#2d8cf0',
+                        width: '16px',
+                        height: '16px',
+                        cursor: 'pointer'
+                      }}
+                    />
                   </div>
+                </li>
+                <li>
+                  <button
+                    onClick={handleSearch}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '6px 15px',
+                      fontSize: '14px',
+                      fontWeight: 400,
+                      color: 'white',
+                      backgroundColor: '#2d8cf0',
+                      border: '1px solid #2d8cf0',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#57a3f3'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2d8cf0'}
+                  >
+                    搜索
+                  </button>
                 </li>
 
                 {/* 重置按钮 - 8080: Button type=info */}
