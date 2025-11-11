@@ -140,6 +140,10 @@ export default function ProblemList() {
     return map[diff] || diff
   }
 
+  const toggleTags = () => {
+    setShowTags((prev) => !prev)
+  }
+
   return (
     <>
       <Header />
@@ -252,20 +256,45 @@ export default function ProblemList() {
 
                 {/* Tags Switch - 8080: i-switch size=large */}
                 <li>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={showTags}
-                      onChange={(e) => setShowTags(e.target.checked)}
-                      style={{
-                        width: '56px',      // 8080: switch large width
-                        height: '28px',     // 8080: switch large height
-                        borderRadius: '14px',
-                        cursor: 'pointer'
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div
+                      role="switch"
+                      aria-checked={showTags}
+                      tabIndex={0}
+                      onClick={toggleTags}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          toggleTags()
+                        }
                       }}
-                    />
-                    <span style={{ fontSize: '14px', color: '#515a6e' }}>Tags</span>
-                  </label>
+                      style={{
+                        width: '56px',
+                        height: '28px',
+                        borderRadius: '14px',
+                        background: showTags ? '#2d8cf0' : '#dcdee2',
+                        position: 'relative',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s',
+                        boxShadow: showTags ? '0 0 0 2px rgba(45,140,240,0.2)' : 'none'
+                      }}
+                    >
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: '2px',
+                          left: showTags ? '30px' : '2px',
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '50%',
+                          background: '#fff',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                          transition: 'all 0.3s'
+                        }}
+                      />
+                    </div>
+                    <span style={{ fontSize: '14px', color: '#515a6e' }}>标签</span>
+                  </div>
                 </li>
 
                 {/* 搜索框 */}
